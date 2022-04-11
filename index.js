@@ -79,11 +79,21 @@ window.addEventListener('load', onload);
 function onload() {
     generateAndDisplayCode();
     blocklyWorkspace.addChangeListener(generateAndDisplayCode);
-    setTimeout(BlocklyStorage.restoreBlocks, 0);
 }
 
 BlocklyStorage.backupOnUnload();
 blocklyWorkspace.addChangeListener(prepareToTraverseBlocks);
+
+function restoreBlocks() {
+    // Wait for Blockly to load block definitions. A TypeError is thrown if they have not yet been loaded.
+    try {
+        BlocklyStorage.restoreBlocks();
+    } catch (e) {
+        setTimeout(restoreBlocks, 10);
+    }
+}
+
+restoreBlocks();
 
 function generateAndDisplayCode() {
     // Referenced from https://stackoverflow.com/questions/8378678/how-can-i-set-the-value-of-a-codemirror-editor-using-javascript/62711689#62711689
