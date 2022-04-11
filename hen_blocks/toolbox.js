@@ -156,14 +156,113 @@ const coqToolbox = `
             </value>
         </block>
         <sep gap="90"></sep>
-        <block type="induction"/>
+        <block type="induction">
+            <mutation options="[[&quot;[Select variable]&quot;,&quot;[Select variable]&quot;]]" branchCount="2" />
+            <field name="VAR">[Select variable]</field>
+            <value name="PATTERN">
+                <block type="disjunctive_pattern">
+                    <value name="LEFT">
+                        <block type="multiple_identifier">
+                            <mutation varCount="0" />
+                        </block>
+                    </value>
+                    <value name="RIGHT">
+                        <block type="multiple_identifier">
+                            <mutation varCount="2" />
+                            <value name="VAR0">
+                                <block type="intro_pattern_identifier">
+                                    <field name="VAR">n'</field>
+                                </block>
+                            </value>
+                            <value name="VAR1">
+                                <block type="intro_pattern_identifier">
+                                    <field name="VAR">IHn'</field>
+                                </block>
+                            </value>
+                        </block>
+                    </value>
+                </block>
+            </value>
+        </block>
         <label text="Intro Patterns"></label>
+        <block type="conjunctive_pattern">
+            <value name="LEFT">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H_left</field>
+                </block>
+            </value>
+            <value name="RIGHT">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H_right</field>
+                </block>
+            </value>
+        </block>
+        <block type="disjunctive_pattern">
+            <value name="LEFT">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H_left</field>
+                </block>
+            </value>
+            <value name="RIGHT">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H_right</field>
+                </block>
+            </value>
+        </block>
+        <block type="disjunctive_pattern">
+            <value name="LEFT">
+                <block type="multiple_identifier">
+                    <mutation varCount="0" />
+                </block>
+            </value>
+            <value name="RIGHT">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">n'</field>
+                </block>
+            </value>
+        </block>
+        <block type="conjunctive_pattern_multiple">
+            <mutation branchCount="3" />
+            <value name="PATTERN0">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H0</field>
+                </block>
+            </value>
+            <value name="PATTERN1">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H1</field>
+                </block>
+            </value>
+            <value name="PATTERN2">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H2</field>
+                </block>
+            </value>
+        </block>
+        <block type="disjunctive_pattern_multiple">
+            <mutation branchCount="3" />
+            <value name="PATTERN0">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H0</field>
+                </block>
+            </value>
+            <value name="PATTERN1">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H1</field>
+                </block>
+            </value>
+            <value name="PATTERN2">
+                <block type="intro_pattern_identifier">
+                    <field name="VAR">H2</field>
+                </block>
+            </value>
+        </block>
+        <block type="multiple_identifier">
+            <mutation varCount="2" />
+            <field name="VAR0">H0</field>
+            <field name="VAR0">H1</field>
+        </block>
         <block type="intro_pattern_identifier"/>
-        <block type="conjunctive_pattern"/>
-        <block type="disjunctive_pattern"/>
-        <block type="conjunctive_pattern_multiple"/>
-        <block type="disjunctive_pattern_multiple"/>
-        <block type="multiple_identifier"/>
         <block type="underscore"/>
     </category>
     <sep></sep>
