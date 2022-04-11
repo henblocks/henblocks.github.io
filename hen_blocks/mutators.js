@@ -1494,15 +1494,19 @@ Blockly.Blocks['theorem'] = {
 }
 
 Blockly.Blocks['variable_dropdown_multiple'] = {
-    varCount_: 2,
-    MIN_COUNT: 2,
+    extraVarCount_: 1,
+    MIN_COUNT: 1,
 
     init: function () {
         this.appendDummyInput("BUTTONS")
+            .appendField("(")
             .appendField(createPlusField(), 'PLUS');
         this.appendDummyInput("VARS")
-            .appendField(new Blockly.FieldDropdown([["[Select variable]", "[Select variable]"]]), "VAR0")
-            .appendField(new Blockly.FieldDropdown([["[Select variable]", "[Select variable]"]]), "VAR1")
+            .appendField(new Blockly.FieldDropdown([["[Select variable]", "[Select variable]"]]), "VAR");
+        this.appendValueInput("VAR0")
+            .setCheck("VarExpression");
+        this.appendDummyInput("RIGHT_BRACKET")
+            .appendField(")");
         this.setColour(COLOUR_VAR);
         this.setOutput(true, ["Proposition", "Expression", "Nat", "Bool", "VarExpression"]);
         this.setInputsInline(true);
@@ -1510,27 +1514,25 @@ Blockly.Blocks['variable_dropdown_multiple'] = {
 
     mutationToDom: function () {
         const container = Blockly.utils.xml.createElement('mutation');
-        container.setAttribute('varCount', this.varCount_);
-        const options = this.getField("VAR0").getOptions(false);
+        container.setAttribute('extraVarCount', this.extraVarCount_);
+        const options = this.getField("VAR").getOptions(false);
         container.setAttribute('options', JSON.stringify(options));
         return container;
     },
     domToMutation: function (xmlElement) {
-        const targetCount = parseInt(xmlElement.getAttribute('varCount'), 10);
-        this.updateShape_(targetCount);
+        const targetCount = parseInt(xmlElement.getAttribute('extraVarCount'), 10);
+        this.updateShape_(targetCount, false);
         const options = xmlElement.getAttribute('options');
         const parsedOptions = JSON.parse(options);
         if (parsedOptions) {
-            for (let i = 0; i < this.varCount_; i++) {
-                this.getField("VAR" + i).menuGenerator_ = parsedOptions;
-            }
+            this.getField("VAR").menuGenerator_ = parsedOptions;
         }
     },
-    updateShape_: function (targetCount) {
-        while (this.varCount_ < targetCount) {
-            this.addVar_();
+    updateShape_: function (targetCount, shouldAddBlock = true) {
+        while (this.extraVarCount_ < targetCount) {
+            this.addVar_(shouldAddBlock);
         }
-        while (this.varCount_ > targetCount) {
+        while (this.extraVarCount_ > targetCount) {
             this.removeVar_();
         }
     },
@@ -1538,41 +1540,53 @@ Blockly.Blocks['variable_dropdown_multiple'] = {
         this.addVar_();
     },
     minus: function () {
-        if (this.varCount_ === this.MIN_COUNT) {
+        if (this.extraVarCount_ === this.MIN_COUNT) {
             return;
         }
         this.removeVar_();
     },
-    addVar_: function () {
-        if (this.varCount_ === this.MIN_COUNT) {
+    addVar_: function (shouldAddBlock = true) {
+        if (this.extraVarCount_ === this.MIN_COUNT) {
             this.getInput("BUTTONS")
                 .appendField(createMinusField(), 'MINUS');
         }
-        this.getInput("VARS")
-            .appendField(new Blockly.FieldDropdown([["[Select variable]", "[Select variable]"]]), "VAR" + this.varCount_);
-        this.varCount_++;
+        const varInput = this.appendValueInput("VAR" + this.extraVarCount_)
+            .setCheck("VarExpression");
+
+        if (shouldAddBlock) {
+            const block = Blockly.getMainWorkspace().newBlock("variable_dropdown");
+            block.initSvg();
+            block.render();
+            varInput.connection.connect(block.outputConnection);
+        }
+
+        this.moveInputBefore("RIGHT_BRACKET", null);
+        this.extraVarCount_++;
 
     },
     removeVar_: function () {
-        this.varCount_--;
-        this.getInput("VARS")
-            .removeField("VAR" + this.varCount_);
+        this.extraVarCount_--;
+        this.getInputTargetBlock("VAR" + this.extraVarCount_)?.dispose();
+        this.removeInput("VAR" + this.extraVarCount_);
 
-        if (this.varCount_ === this.MIN_COUNT) {
+        if (this.extraVarCount_ === this.MIN_COUNT) {
             this.getInput("BUTTONS")
                 .removeField("MINUS");
         }
     },
     getVarFields: function() {
-        const varFields = [];
-        for (let i = 0; i < this.varCount_; i++) {
-            varFields.push(this.getField("VAR" + i));
+        const varFields = [this.getField("VAR")];
+        for (let i = 0; i < this.extraVarCount_; i++) {
+            const block = this.getInputTargetBlock("VAR" + this.extraVarCount_);
+            if (block) {
+                varFields.push(...block.getVarFields());
+            }
         }
         return varFields;
     }
     // getIdentifiers: function () {
     //     const identifiers = [];
-    //     for (let i = 0; i < this.varCount_; i++) {
+    //     for (let i = 0; i < this.extraVarCount_; i++) {
     //         const block = this.getInputTargetBlock("VAR" + i);
     //         if (block) {
     //             console.assert(block.type === "intro_pattern_identifier");

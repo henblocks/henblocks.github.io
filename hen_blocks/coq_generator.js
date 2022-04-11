@@ -224,16 +224,17 @@ coqGenerator["binder"] = function (block) {
 
 coqGenerator["variable_dropdown"] = function (block) {
     const name = block.getFieldValue("VAR");
-    return [`${name}`, coqGenerator.PRECEDENCE];
+    return [`${sanitize(name)}`, coqGenerator.PRECEDENCE];
 }
 
 coqGenerator["variable_dropdown_multiple"] = function (block) {
+    const variable = block.getFieldValue("VAR");
     const vars = [];
-    for (let i = 0; i < block.varCount_; i++) {
-        const variable = block.getFieldValue("VAR" + i);
-        vars.push(sanitize(variable));
+    for (let i = 0; i < block.extraVarCount_; i++) {
+        const varCode = coqGenerator.valueToCode(block, "VAR" + i, coqGenerator.PRECEDENCE);
+        vars.push(varCode);
     }
-    return [`(${vars.join(" ")})`, coqGenerator.PRECEDENCE];
+    return [`(${sanitize(variable)} ${vars.join(" ")})`, coqGenerator.PRECEDENCE];
 }
 
 coqGenerator["not"] = function (block) {

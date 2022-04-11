@@ -63,7 +63,11 @@ const coqToolbox = `
         <!-- </block> -->
         <block type="true_or_false_expression"/>
         <block type="variable_dropdown"/>
-        <block type="variable_dropdown_multiple"/>
+        <block type="variable_dropdown_multiple">
+            <value name="VAR0">
+                <block type="variable_dropdown"/>            
+            </value>
+        </block>
     </category>
     <category name="Propositions" colour="${COLOUR_PROPOSITIONS}">
         <block type="forall">
@@ -87,11 +91,19 @@ const coqToolbox = `
         <block type="not"/>
         <!-- <block type="binder_dialog"/> -->
         <block type="variable_dropdown"/>
-        <block type="variable_dropdown_multiple"/>
+        <block type="variable_dropdown_multiple">
+            <value name="VAR0">
+                <block type="variable_dropdown"/>            
+            </value>
+        </block>
     </category>
     <category name="Tactics" colour="${COLOUR_TACTICS}">
         <block type="variable_dropdown"/>
-        <block type="variable_dropdown_multiple"/>
+        <block type="variable_dropdown_multiple">
+            <value name="VAR0">
+                <block type="variable_dropdown"/>            
+            </value>
+        </block>
         <label text="Managing Context"></label>
         <block type="intro"/>
         <block type="revert"/>
@@ -101,7 +113,6 @@ const coqToolbox = `
         <block type="exact">
             <value name="VAR">
                 <block type="variable_dropdown" />
-                <shadow type="variable_dropdown" />
             </value>
         </block>
         
@@ -109,8 +120,11 @@ const coqToolbox = `
         
         <block type="rewrite">
             <value name="VAR">
-                <block type="variable_dropdown_multiple" />
-                <shadow type="variable_dropdown_multiple" />
+                <block type="variable_dropdown_multiple">
+                    <value name="VAR0">
+                        <block type="variable_dropdown"/>            
+                    </value>
+                </block>
             </value>
         </block>
         <block type="unfold"/>
@@ -259,8 +273,6 @@ const coqToolbox = `
         </block>
         <block type="multiple_identifier">
             <mutation varCount="2" />
-            <field name="VAR0">H0</field>
-            <field name="VAR0">H1</field>
         </block>
         <block type="intro_pattern_identifier"/>
         <block type="underscore"/>
