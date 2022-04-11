@@ -76,23 +76,25 @@ function prepareToTraverseBlocks(event) {
                 // Get all varFields and store into a list
                 switch (block.type) {
                     case "intro":
-                        traverseVariablesToBeRenamed(block.getNextBlock(), event.oldValue, event.newValue);
+                        traverseScopedVariablesToBeRenamed(block.getNextBlock(), event.oldValue, event.newValue);
                         break;
                     case "intro_pattern_identifier":
                         let nextBlock = block.getSurroundParent();
                         while (nextBlock && nextBlock.type !== "destruct") {
                             nextBlock = nextBlock.getSurroundParent();
                         }
-                        traverseVariablesToBeRenamed(nextBlock, event.oldValue, event.newValue);
+                        traverseScopedVariablesToBeRenamed(nextBlock, event.oldValue, event.newValue);
                         break;
                     case "binder":
-                        traverseVariablesToBeRenamed(block.getSurroundParent(), event.oldValue, event.newValue);
+                        traverseScopedVariablesToBeRenamed(block.getSurroundParent(), event.oldValue, event.newValue);
                         break;
                     case "inductive":
                     case "definition_or_fixpoint":
                     case "theorem":
                     case "constructor_definition":
+                        traverseAllVariablesToBeRenamed(event.oldValue, event.newValue)
                         break;
+                    // TODO: add constructor arguments etc.
                     default:
                         console.warn("Illegal field change event detected");
                         isRenaming = false;
@@ -115,27 +117,41 @@ function prepareToTraverseBlocks(event) {
     }
 }
 
-function traverseVariablesToBeRenamed(block, oldValue, newValue) {
+function traverseScopedVariablesToBeRenamed(block, oldValue, newValue) {
     if (!block) {
         return;
     }
-    // TODO: Stop traversing if the variable is removed (e.g. destruct/induction tactic / match)
+    let varFields;
     switch (block.type) {
         case "destruct":
         case "induction":
         case "variable_dropdown":
         case "variable_dropdown_multiple":
-            const varFields = block.getVarFields();
+            varFields = block.getVarFields();
             for (const varField of varFields) {
                 if (varField.selectedOption_[0] === oldValue) {
                     fieldsToBeRenamed.push(varField);
+                    // This prevents renaming from being propagated past a destruct/induction block, because such blocks
+                    // remove a variable from the scope.
+                    switch (block.type) {
+                        case "destruct":
+                        case "induction":
+                            return;
+                    }
                 }
             }
             break;
         default:
     }
-    block.getChildren(true).forEach(childBlock => traverseVariablesToBeRenamed(childBlock, oldValue, newValue));
+    block.getChildren(true).forEach(childBlock => traverseScopedVariablesToBeRenamed(childBlock, oldValue, newValue));
 }
+
+function traverseAllVariablesToBeRenamed(oldValue, newValue) {
+    for (const block of Blockly.getMainWorkspace().getTopBlocks(true)) {
+        traverseScopedVariablesToBeRenamed(block, oldValue, newValue);
+    }
+}
+
 
 // https://coq.inria.fr/refman/language/core/basic.html#lexical-conventions
 const RESERVED_KEYWORDS = [
