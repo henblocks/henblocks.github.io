@@ -128,10 +128,12 @@ const coqToolbox = `
                 <block type="conjunctive_pattern">
                     <value name="LEFT">
                         <block type="intro_pattern_identifier">
+                            <field name="VAR">H_left</field>
                         </block>
                     </value>
                     <value name="RIGHT">
                         <block type="intro_pattern_identifier">
+                            <field name="VAR">H_right</field>
                         </block>
                     </value>
                 </block>
@@ -142,10 +144,12 @@ const coqToolbox = `
                 <block type="disjunctive_pattern">
                     <value name="LEFT">
                         <block type="intro_pattern_identifier">
+                            <field name="VAR">H_left</field>
                         </block>
                     </value>
                     <value name="RIGHT">
                         <block type="intro_pattern_identifier">
+                            <field name="VAR">H_right</field>
                         </block>
                     </value>
                 </block>

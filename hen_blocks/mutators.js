@@ -872,7 +872,7 @@ Blockly.Blocks['inductive'] = {
      * @this {Blockly.Block}
      */
     init: function () {
-        const nameField = new Blockly.FieldTextInput("type0", variableValidator);
+        const nameField = new Blockly.FieldTextInput("type_name", variableValidator);
         nameField.setSpellcheck(false);
         nameField.onFinishEditing_ = completeVariableRenaming;
 
@@ -1271,7 +1271,7 @@ Blockly.Blocks['definition_or_fixpoint'] = {
      * @this {Blockly.Block}
      */
     init: function () {
-        const nameField = new Blockly.FieldTextInput("definition0", variableValidator);
+        const nameField = new Blockly.FieldTextInput("definition_name", variableValidator);
         nameField.setSpellcheck(false);
         nameField.onFinishEditing_ = completeVariableRenaming;
 
