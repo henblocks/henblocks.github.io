@@ -477,19 +477,22 @@ function traverseBlocks() {
                 break;
             case "variable_dropdown":
             case "variable_dropdown_multiple":
+                const constructors = getConstructors(inductiveTypes);
+                const dropdownOptions =  [...localNames, ...constructors.keys(), ...definitionNames, ...theoremNames];
+
                 const varFields = block.getVarFields();
                 const warnings = new Set();
                 for (const varField of varFields) {
                     const selectedOption = varField.getValue();
                     if (selectedOption === "[Select variable]") {
                         warnings.add("Please select a variable.");
-                    } else if (!newLocalNames.includes(selectedOption)) {
+                    } else if (!dropdownOptions.includes(selectedOption)) {
                         warnings.add("Please ensure the selected variable has been defined.");
                     }
                     if (localNames.length === 0) {
                         varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
                     } else {
-                        varField.menuGenerator_ = localNames.map(value => [value, value]);
+                        varField.menuGenerator_ = dropdownOptions.map(value => [value, value]);
                     }
                 }
                 if (warnings.size === 0) {
