@@ -18,7 +18,7 @@
  * @return {Blockly.FieldImage} The minus field.
  */
 export function createMinusField(args = undefined) {
-  const minus = new Blockly.FieldImage(minusImage, 15, 15, undefined, onClick_);
+  const minus = new Blockly.FieldImage(minusImage, 10, 15, undefined, onClick_);
   /**
    * Untyped args passed to block.minus when the field is clicked.
    * @type {?(Object|undefined)}
@@ -64,10 +64,9 @@ function onClick_(minusField) {
 //     'JNMTggMTFoLTEyYy0xLjEwNCAwLTIgLjg5Ni0yIDJzLjg5NiAyIDIgMmgxMmMxLjEwNCAw' +
 //     'IDItLjg5NiAyLTJzLS44OTYtMi0yLTJ6IiBmaWxsPSJ3aGl0ZSIgLz48L3N2Zz4K';
 
-// Bernard: Changed colour to grey (#CCC)
+// Bernard: Changed colour to grey (#CCC) and made it smaller (from 24 x 24 to 16 x 24)
 
 const minusImage =
-    'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAw' +
-    'MC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPS' +
-    'JNMTggMTFoLTEyYy0xLjEwNCAwLTIgLjg5Ni0yIDJzLjg5NiAyIDIgMmgxMmMxLjEwNCAw' +
-    'IDItLjg5NiAyLTJzLS44OTYtMi0yLTJ6IiBmaWxsPSIjQ0NDIiAvPjwvc3ZnPgo=';
+    'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjE2Ii' +
+    'BoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTQgMTBoLTEyYy0xLjEwNCAwLTIgLjg5Ni0yIDJzLjg5NiAyIDIgMmgxMmMxLjEwNCAwIDItLjg5NiAyLT' +
+    'JzLS44OTYtMi0yLTJ6IiBmaWxsPSIjQ0NDIiAvPjwvc3ZnPgo=';
