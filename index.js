@@ -224,3 +224,10 @@ function uploadBlocklyXml(event) {
     //     return false;
     // }
 }
+
+function toggleCoqPanel() {
+    document.querySelector("#ide-wrapper").classList.toggle('hideCoqPanel');
+    const button = document.querySelector("#toggleCoqPanelButton");
+    button.innerHTML = button.innerHTML === "▶" ? "◀" : "▶";
+    onresize();
+}
