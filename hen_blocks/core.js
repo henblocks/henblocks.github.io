@@ -270,15 +270,17 @@ function traverseBlocks() {
         let nextBlock;
         switch (block.type) {
             case "theorem":
+                nextBlock = block.getInputTargetBlock('PROPOSITION');
+                traverseTheorem(nextBlock, [], theoremNames, definitionNames, inductiveTypes, allNames);
+
+                const proofBlock = block.getNextBlock();
+                traverseProof(proofBlock, []);
+
                 const theoremName = block.getFieldValue("VAR");
                 if (!block.warning) { // Warning occurs only if it's a duplicate name
                     console.assert(!theoremNames.includes(theoremName));
                     theoremNames.push(theoremName);
                 }
-                nextBlock = block.getInputTargetBlock('PROPOSITION');
-                traverseTheorem(nextBlock, [], theoremNames, definitionNames, inductiveTypes, allNames);
-                const proofBlock = block.getNextBlock();
-                traverseProof(proofBlock, []);
                 break;
             case "definition_or_fixpoint":
                 const definitionName = block.getFieldValue("VAR");
