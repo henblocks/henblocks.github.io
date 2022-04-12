@@ -559,7 +559,18 @@ function traverseBlocks() {
                 break;
             case "induction":
             case "destruct":
-                const selectedOption = block.getFieldValue("VARr");
+                if (!block.isInsertionMarker_) {
+                    const patternBlock = block.getInputTargetBlock("PATTERN");
+                    let targetCount = patternBlock?.getNumBranches() ?? 0;
+                    if (targetCount === 1) {
+                        targetCount = 0;
+                    }
+                    block.updateShape_(targetCount);
+                }
+
+
+
+                const selectedOption = block.getFieldValue("VAR");
                 const index = names.indexOf(selectedOption);
                 newNames.splice(index, 1);
                 // TODO: Set warning text for destruct/induction block if name has already been defined

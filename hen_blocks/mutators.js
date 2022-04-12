@@ -616,11 +616,12 @@ Blockly.Blocks['destruct'] = {
         the current block is an insertion marker (Block C). If it is, it is prevented from updating its shape. Thus,
         it retains the number of branches from the original Block A, causing no error.
          */
-        if (!this.isInsertionMarker_) {
-            const block = this.getInputTargetBlock("PATTERN");
-            let targetCount = block?.getNumBranches() ?? 0;
-            this.updateShape_(targetCount);
-        }
+        // if (!this.isInsertionMarker_) {
+        //     const block = this.getInputTargetBlock("PATTERN");
+        //     let targetCount = block?.getNumBranches() ?? 0;
+        //     console.log(targetCount);
+        //     this.updateShape_(targetCount);
+        // }
     },
     updateShape_: function (targetCount) {
         while (this.branchCount_ < targetCount) {
