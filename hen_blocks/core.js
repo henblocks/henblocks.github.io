@@ -127,6 +127,7 @@ function traverseScopedVariablesToBeRenamed(block, oldValue, newValue) {
         case "induction":
         case "variable_dropdown":
         case "variable_dropdown_multiple":
+        case "match":
             varFields = block.getVarFields();
             for (const varField of varFields) {
                 if (varField.selectedOption_[0] === oldValue) {
