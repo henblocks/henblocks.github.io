@@ -154,6 +154,7 @@ const coqToolbox = `
             </value>
         </block>
         <block type="destruct">
+            <mutation options="[[&quot;[Select variable]&quot;,&quot;[Select variable]&quot;]]" branchCount="2" />
             <value name="PATTERN">
                 <block type="disjunctive_pattern">
                     <value name="LEFT">
@@ -169,7 +170,6 @@ const coqToolbox = `
                 </block>
             </value>
         </block>
-        <sep gap="90"></sep>
         <block type="induction">
             <mutation options="[[&quot;[Select variable]&quot;,&quot;[Select variable]&quot;]]" branchCount="2" />
             <field name="VAR">[Select variable]</field>
