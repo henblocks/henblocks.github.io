@@ -16,7 +16,6 @@ Blockly.defineBlocksWithJsonArray([
         "type": "reflexivity",
         "message0": "reflexivity",
         "previousStatement": "Tactic",
-        "nextStatement": "Tactic",
         "colour": COLOUR_TACTICS,
     },
     {
@@ -87,13 +86,33 @@ Blockly.defineBlocksWithJsonArray([
         "type": "exact",
         "message0": "exact %1",
         "args0": [
-            // {
-            //     "type": "field_dropdown",
-            //     "name": "HYPOTHESIS",
-            //     "options": [
-            //         ["[Select variable]", "[Select variable]"],
-            //     ]
-            // },
+            {
+                "type": "input_value",
+                "name": "VAR",
+                "check": "VarExpression",
+            }
+        ],
+        "previousStatement": "Tactic",
+        "colour": COLOUR_TACTICS,
+    },
+    {
+        "type": "revert",
+        "message0": "revert %1",
+        "args0": [
+            {
+                "type": "input_value",
+                "name": "VAR",
+                "check": "SingleVarExpression",
+            }
+        ],
+        "previousStatement": "Tactic",
+        "nextStatement": "Tactic",
+        "colour": COLOUR_TACTICS,
+    },
+    {
+        "type": "apply",
+        "message0": "apply %1",
+        "args0": [
             {
                 "type": "input_value",
                 "name": "VAR",
@@ -105,15 +124,40 @@ Blockly.defineBlocksWithJsonArray([
         "colour": COLOUR_TACTICS,
     },
     {
-        "type": "revert",
-        "message0": "revert %1",
+        "type": "discriminate",
+        "message0": "discriminate %1",
         "args0": [
             {
-                "type": "field_variable",
+                "type": "input_value",
                 "name": "VAR",
-                "variable": "item",
-                "variableTypes": [""]
-            },
+                "check": "VarExpression",
+            }
+        ],
+        "previousStatement": "Tactic",
+        "colour": COLOUR_TACTICS,
+    },
+    {
+        "type": "contradiction",
+        "message0": "contradiction %1",
+        "args0": [
+            {
+                "type": "input_value",
+                "name": "VAR",
+                "check": "VarExpression",
+            }
+        ],
+        "previousStatement": "Tactic",
+        "colour": COLOUR_TACTICS,
+    },
+    {
+        "type": "injection",
+        "message0": "injection %1",
+        "args0": [
+            {
+                "type": "input_value",
+                "name": "VAR",
+                "check": "VarExpression",
+            }
         ],
         "previousStatement": "Tactic",
         "nextStatement": "Tactic",
@@ -146,11 +190,10 @@ Blockly.defineBlocksWithJsonArray([
         "message0": "unfold %1",
         "args0": [
             {
-                "type": "field_variable",
+                "type": "input_value",
                 "name": "VAR",
-                "variable": "item",
-                "variableTypes": [""]
-            },
+                "check": "VarExpression",
+            }
         ],
         "previousStatement": "Tactic",
         "nextStatement": "Tactic",
@@ -269,7 +312,7 @@ Blockly.defineBlocksWithJsonArray([
                 ]
             },
         ],
-        "output": ["Proposition", "Expression", "Nat", "Bool", "VarExpression"],
+        "output": ["Proposition", "Expression", "Nat", "Bool", "VarExpression", "SingleVarExpression"],
         "colour": COLOUR_VAR,
     },
     {
@@ -335,7 +378,7 @@ Blockly.defineBlocksWithJsonArray([
             },
         ],
         "colour": COLOUR_EXPRESSIONS,
-        "output": ["Expression"],
+        "output": ["Expression", "Bool"],
     },
     {
         "type": "not",
@@ -353,12 +396,20 @@ Blockly.defineBlocksWithJsonArray([
     },
     {
         "type": "implies",
-        "message0": "%1 ➝ %2",
+        "message0": "%1 %2 %3",
         "args0": [
             {
                 "type": "input_value",
                 "name": "LEFT",
                 "check": "Proposition",
+            },
+            {
+                "type": "field_dropdown",
+                "name": "OPERATOR",
+                "options": [
+                    ["➝", "->"],
+                    ["↔", "<->"],
+                ]
             },
             {
                 "type": "input_value",
@@ -560,7 +611,7 @@ Blockly.defineBlocksWithJsonArray([
         ],
         "colour": COLOUR_EXPRESSIONS,
         "inputsInline": true,
-        "output": "Nat",
+        "output": ["Nat", "Expression"],
     },
     // {
     //     "type": "addition",
@@ -628,15 +679,29 @@ Blockly.defineBlocksWithJsonArray([
         "output": ["Nat", "Expression"],
     },
     {
-        "type": "underscore",
+        "type": "underscore_intro_pattern",
         "message0": "_",
         "colour": COLOUR_TACTICS,
-        "output": ["IntroPatternIdentifier", "Underscore"],
+        "output": ["IntroPatternIdentifier"],
+    },
+    {
+        "type": "underscore_case",
+        "message0": "_",
+        "colour": COLOUR_EXPRESSIONS,
+        "output": ["CaseConstructor", "CaseIdentifier"],
     },
 ]);
 
-Blockly.Blocks['underscore'].getCaseConstrBlocks = function() {
+Blockly.Blocks['underscore_case'].getCaseConstrBlocks = function() {
     return [];
+}
+
+Blockly.Blocks['underscore_case'].getIdentifiers = function () {
+    return [];
+}
+
+Blockly.Blocks['underscore_intro_pattern'].getIdentifiersFromIntroPattern = function () {
+    return [[]];
 }
 
 // Bernard: This is an example of a dropdown changing the shape of the block.
@@ -805,7 +870,7 @@ Blockly.Blocks['disjunctive_pattern'].getNumBranches = function () {
 
 
 // LEFT * RIGHT (multiply)
-Blockly.Blocks['conjunctive_pattern'].getIdentifiersFromIntroPattern = function () {
+Blockly.Blocks['conjunctive_pattern'].getIdentifiersFromIntroPattern = function (setWarnings, names) {
     // CARTESIAN PRODUCT
     // [[A]] [[B]] --> [[A, B]]
     // [[A] [B]] [[C] [D]] --> [[A C] [A D] [B C] [B D]]
@@ -813,9 +878,9 @@ Blockly.Blocks['conjunctive_pattern'].getIdentifiersFromIntroPattern = function 
     // [[A] [B]] [[]] --> [[A] [B]]
     // TODO: (A /\ (B \/ C)) \/ (D /\ E)
     const leftBlock = this.getInputTargetBlock("LEFT");
-    const leftIdentifiers = leftBlock ? leftBlock.getIdentifiersFromIntroPattern() : [[]];
+    const leftIdentifiers = leftBlock ? leftBlock.getIdentifiersFromIntroPattern(setWarnings, names) : [[]];
     const rightBlock = this.getInputTargetBlock("RIGHT");
-    const rightIdentifiers = rightBlock ? rightBlock.getIdentifiersFromIntroPattern() : [[]];
+    const rightIdentifiers = rightBlock ? rightBlock.getIdentifiersFromIntroPattern(setWarnings, names) : [[]];
     // const identifiers = [];
     // for (let leftBranchIdentifiers of leftIdentifiers) {
     //     for (let rightBranchIdentifiers of rightIdentifiers) {
@@ -825,11 +890,11 @@ Blockly.Blocks['conjunctive_pattern'].getIdentifiersFromIntroPattern = function 
     return cartesianProduct(leftIdentifiers, rightIdentifiers);
 }
 
-Blockly.Blocks['disjunctive_pattern'].getIdentifiersFromIntroPattern = function () {
+Blockly.Blocks['disjunctive_pattern'].getIdentifiersFromIntroPattern = function (setWarnings, names) {
     const leftBlock = this.getInputTargetBlock("LEFT");
-    const leftIdentifiers = leftBlock ? leftBlock.getIdentifiersFromIntroPattern() : [[]];  // [["A", "B"], ["C", "D"]]
+    const leftIdentifiers = leftBlock ? leftBlock.getIdentifiersFromIntroPattern(setWarnings, names) : [[]];  // [["A", "B"], ["C", "D"]]
     const rightBlock = this.getInputTargetBlock("RIGHT");
-    const rightIdentifiers = rightBlock ? rightBlock.getIdentifiersFromIntroPattern() : [[]];
+    const rightIdentifiers = rightBlock ? rightBlock.getIdentifiersFromIntroPattern(setWarnings, names) : [[]];
     return [...leftIdentifiers, ...rightIdentifiers];
 }
 
@@ -869,8 +934,15 @@ Blockly.Blocks['intro_pattern_identifier'] = {
         this.appendDummyInput()
             .appendField(nameField, 'VAR');
     },
-    getIdentifiersFromIntroPattern: function () {
-        return [[this.getFieldValue("VAR")]];
+    getIdentifiersFromIntroPattern: function (setWarnings, names) {
+        const identifier = this.getFieldValue("VAR");
+        if (names.includes(identifier)) {
+            this.setWarningText(`"${identifier}" has already been defined.`);
+            return [[]];
+        } else {
+            this.setWarningText(null);
+            return [[identifier]];
+        }
     },
 };
 

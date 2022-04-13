@@ -140,11 +140,26 @@ const forallExistsMutator = {
                 const [binderIdentifiers, binderNewTypes] = binderBlock.getIdentifiers();
                 if (setWarnings) {
                     const uniqueIdentifiers = new Set(binderIdentifiers);
+                    const selectedTypes = []
+                    for (let j = 0; j < binderBlock.typeCount_; j++) {
+                        const selectedType = binderBlock.getFieldValue("TYPE" + j);
+                        selectedTypes.push(selectedType);
+                    }
+                    const warnings = new Set();
+
+                    if (selectedTypes.some(selectedType => !names.includes(selectedType))) {
+                        warnings.add("Please ensure the selected type has been defined.")
+                    }
+
                     if (uniqueIdentifiers.size !== binderIdentifiers.length
                         || binderIdentifiers.some(identifier => identifiers.includes(identifier) || names.includes(identifier))) {
-                        binderBlock.setWarningText("Duplicate variable names");
-                    } else {
+                        warnings.add("Duplicate variable names.");
+                    }
+
+                    if (warnings.size === 0) {
                         binderBlock.setWarningText(null);
+                    } else {
+                        binderBlock.setWarningText([...warnings].join("\n"));
                     }
                 }
                 const typesToAdd = binderNewTypes.filter(type => !names.includes(type) && !newTypes.includes(type));
@@ -276,6 +291,7 @@ Blockly.Blocks['binder'] = {
         this.setColour(COLOUR_VAR);
         this.setOutput(true, "Binder");
         this.setMovable(false);
+        this.setDeletable(false);
     },
 
     /**
@@ -426,6 +442,14 @@ Blockly.Blocks['binder'] = {
         this.inputList[0].removeField("ARROW" + this.typeCount_);
         this.inputList[0].removeField('TYPE' + this.typeCount_);
     },
+    getTypeFields: function () {
+        const fields = [];
+        for (let i = 0; i < this.typeCount_; i++) {
+            const field = this.getField("TYPE" + i);
+            fields.push(field);
+        }
+        return fields;
+    }
 };
 
 Blockly.Blocks['induction'] = {
@@ -482,9 +506,9 @@ Blockly.Blocks['induction'] = {
         }
         this.removeInput("STATEMENTS" + this.branchCount_);
     },
-    getIdentifiersFromIntroPattern: function () {
+    getIdentifiersFromIntroPattern: function (setWarnings, names) {
         const block = this.getInputTargetBlock("PATTERN");
-        return block ? block.getIdentifiersFromIntroPattern() : [];
+        return block ? block.getIdentifiersFromIntroPattern(setWarnings, names) : [];
     },
     getVarFields: function () {
         return [this.getField("VAR")];
@@ -500,7 +524,7 @@ Blockly.Blocks['multiple_identifier'] = {
             .appendField(createPlusField(), 'PLUS')
             .appendField(createMinusField(), 'MINUS');
         this.appendValueInput("VAR0")
-            .setCheck("IntroPatternIdentifier");
+            .setCheck(["IntroPattern", "IntroPatternIdentifier"]);
         this.setColour(COLOUR_TACTICS);
         this.setOutput(true, "MultipleIdentifier");
         this.setInputsInline(true);
@@ -538,7 +562,7 @@ Blockly.Blocks['multiple_identifier'] = {
                 .appendField(createMinusField(), 'MINUS');
         }
         this.appendValueInput("VAR" + this.varCount_)
-            .setCheck("IntroPatternIdentifier");
+            .setCheck(["IntroPattern", "IntroPatternIdentifier"]);
         this.varCount_++;
 
     },
@@ -556,19 +580,26 @@ Blockly.Blocks['multiple_identifier'] = {
                 .removeField("MINUS");
         }
     },
-    getIdentifiersFromIntroPattern: function () {
-        const identifiers = [];
+    getIdentifiersFromIntroPattern: function (setWarnings, names) {
+        const branchIdentifierList = [];
         for (let i = 0; i < this.varCount_; i++) {
             const block = this.getInputTargetBlock("VAR" + i);
-            if (block) {
-                console.assert(block.type === "intro_pattern_identifier");
-                const blockIdentifiers = block.getIdentifiersFromIntroPattern();
-                console.assert(blockIdentifiers.length === 1);
-                console.assert(blockIdentifiers[0].length === 1);
-                identifiers.push(blockIdentifiers[0][0]);
+            const branchIdentifiers = block ? block.getIdentifiersFromIntroPattern(setWarnings, [...names, ...branchIdentifierList.flat().flat()]) : [[]];
+            branchIdentifierList.push(branchIdentifiers);
+        }
+        return cartesianProduct(...branchIdentifierList);
+    },
+    getNumBranches: function () {
+        let multiplication = 1;
+
+        for (let i = 0; i < this.varCount_; i++) {
+            const block = this.getInputTargetBlock("VAR" + i);
+            if (block && block.getNumBranches) {
+                const num = block.getNumBranches();
+                multiplication *= num;
             }
         }
-        return [identifiers];
+        return multiplication;
     }
 }
 
@@ -581,7 +612,7 @@ Blockly.Blocks['destruct'] = {
      */
     init: function () {
         this.appendDummyInput()
-            .appendField("destruct")
+            .appendField(new Blockly.FieldDropdown([["destruct", "destruct"], ["induction", "induction"]]), "COMMAND")
             .appendField(new Blockly.FieldDropdown([["[Select variable]", "[Select variable]"]]), "VAR")
             .appendField("as");
         this.appendValueInput("PATTERN")
@@ -651,9 +682,9 @@ Blockly.Blocks['destruct'] = {
         this.removeInput("STATEMENTS" + this.branchCount_);
         this.setNextStatement("Tactic");
     },
-    getIdentifiersFromIntroPattern: function () {
+    getIdentifiersFromIntroPattern: function (setWarnings, names) {
         const block = this.getInputTargetBlock("PATTERN");
-        return block ? block.getIdentifiersFromIntroPattern() : [];
+        return block ? block.getIdentifiersFromIntroPattern(setWarnings, names) : [];
     },
     getVarFields: function () {
         return [this.getField("VAR")];
@@ -745,11 +776,11 @@ Blockly.Blocks['disjunctive_pattern_multiple'] = {
         }
         return count;
     },
-    getIdentifiersFromIntroPattern: function () {
+    getIdentifiersFromIntroPattern: function (setWarnings, names) {
         const identifiers = [];
         for (let i = 0; i < this.branchCount_; i++) {
             const block = this.getInputTargetBlock("PATTERN" + i);
-            const branchIdentifiers = block ? block.getIdentifiersFromIntroPattern() : [[]];
+            const branchIdentifiers = block ? block.getIdentifiersFromIntroPattern(setWarnings, [...names, ...identifiers.flat()]) : [[]];
             identifiers.push(...branchIdentifiers);
         }
         return identifiers;
@@ -827,7 +858,7 @@ Blockly.Blocks['conjunctive_pattern_multiple'] = {
                 .removeField("MINUS");
         }
     },
-    getIdentifiersFromIntroPattern: function () {
+    getIdentifiersFromIntroPattern: function (setWarnings, names) {
         // CARTESIAN PRODUCT
         // [[A]] [[B]] --> [[A, B]]
         // [[A] [B]] [[C] [D]] --> [[A C] [A D] [B C] [B D]]
@@ -837,7 +868,7 @@ Blockly.Blocks['conjunctive_pattern_multiple'] = {
         const branchIdentifierList = [];
         for (let i = 0; i < this.branchCount_; i++) {
             const block = this.getInputTargetBlock("PATTERN" + i);
-            const branchIdentifiers = block ? block.getIdentifiersFromIntroPattern() : [[]];
+            const branchIdentifiers = block ? block.getIdentifiersFromIntroPattern(setWarnings, names) : [[]];
             branchIdentifierList.push(branchIdentifiers);
         }
         return cartesianProduct(...branchIdentifierList);
@@ -1110,11 +1141,26 @@ Blockly.Blocks['constructor_definition'] = {
                 const [binderIdentifiers, binderNewTypes] = binderBlock.getIdentifiers();
                 if (setWarnings) {
                     const uniqueIdentifiers = new Set(binderIdentifiers);
+                    const selectedTypes = []
+                    for (let j = 0; j < binderBlock.typeCount_; j++) {
+                        const selectedType = binderBlock.getFieldValue("TYPE" + j);
+                        selectedTypes.push(selectedType);
+                    }
+                    const warnings = new Set();
+
+                    if (selectedTypes.some(selectedType => !names.includes(selectedType))) {
+                        warnings.add("Please ensure the selected type has been defined.")
+                    }
+
                     if (uniqueIdentifiers.size !== binderIdentifiers.length
                         || binderIdentifiers.some(identifier => identifiers.includes(identifier) || names.includes(identifier))) {
-                        binderBlock.setWarningText("Duplicate variable names");
-                    } else {
+                        warnings.add("Duplicate variable names.");
+                    }
+
+                    if (warnings.size === 0) {
                         binderBlock.setWarningText(null);
+                    } else {
+                        binderBlock.setWarningText([...warnings].join("\n"));
                     }
                 }
                 const typesToAdd = binderNewTypes.filter(type => !names.includes(type) && !newTypes.includes(type));
@@ -1158,14 +1204,14 @@ Blockly.Blocks['match'] = {
             .appendField(createMinusField(), 'MINUS');
         this.appendDummyInput("NEWLINE0");
         this.appendValueInput("CASE0")
-            .setCheck(["CaseConstructor", "Underscore"])
+            .setCheck("CaseConstructor")
             .appendField("|");
         this.appendValueInput("RESULT0")
             .setCheck("Expression")
             .appendField("=>");
         this.appendDummyInput("NEWLINE1");
         this.appendValueInput("CASE1")
-            .setCheck(["CaseConstructor", "Underscore"])
+            .setCheck("CaseConstructor")
             .appendField("|");
         this.appendValueInput("RESULT1")
             .setCheck("Expression")
@@ -1208,7 +1254,7 @@ Blockly.Blocks['match'] = {
         }
         this.appendDummyInput("NEWLINE" + this.branchCount_);
         const caseInput = this.appendValueInput("CASE" + this.branchCount_)
-            .setCheck(["CaseConstructor", "Underscore"])
+            .setCheck("CaseConstructor")
             .appendField("|");
         this.appendValueInput("RESULT" + this.branchCount_)
             .setCheck("Expression")
@@ -1447,11 +1493,26 @@ Blockly.Blocks['definition_or_fixpoint'] = {
                 const [binderIdentifiers, binderNewTypes] = binderBlock.getIdentifiers();
                 if (setWarnings) {
                     const uniqueIdentifiers = new Set(binderIdentifiers);
+                    const selectedTypes = []
+                    for (let j = 0; j < binderBlock.typeCount_; j++) {
+                        const selectedType = binderBlock.getFieldValue("TYPE" + j);
+                        selectedTypes.push(selectedType);
+                    }
+                    const warnings = new Set();
+
+                    if (selectedTypes.some(selectedType => !names.includes(selectedType))) {
+                        warnings.add("Please ensure the selected type has been defined.")
+                    }
+
                     if (uniqueIdentifiers.size !== binderIdentifiers.length
                         || binderIdentifiers.some(identifier => identifiers.includes(identifier) || names.includes(identifier))) {
-                        binderBlock.setWarningText("Duplicate variable names");
-                    } else {
+                        warnings.add("Duplicate variable names.");
+                    }
+
+                    if (warnings.size === 0) {
                         binderBlock.setWarningText(null);
+                    } else {
+                        binderBlock.setWarningText([...warnings].join("\n"));
                     }
                 }
                 const typesToAdd = binderNewTypes.filter(type => !names.includes(type) && !newTypes.includes(type));
@@ -1471,6 +1532,9 @@ Blockly.Blocks['definition_or_fixpoint'] = {
                 block.setTypeDropdown(options);
             }
         }
+    },
+    getTypeFields: function () {
+        return [this.getField("TYPE")];
     }
 }
 
@@ -1505,7 +1569,7 @@ Blockly.Blocks['variable_dropdown_multiple'] = {
         this.appendDummyInput("VARS")
             .appendField(new Blockly.FieldDropdown([["[Select variable]", "[Select variable]"]]), "VAR");
         this.appendValueInput("VAR0")
-            .setCheck("VarExpression");
+            .setCheck(["VarExpression", "Nat", "Bool"]);
         this.appendDummyInput("RIGHT_BRACKET")
             .appendField(")");
         this.setColour(COLOUR_VAR);
@@ -1552,7 +1616,7 @@ Blockly.Blocks['variable_dropdown_multiple'] = {
                 .appendField(createMinusField(), 'MINUS');
         }
         const varInput = this.appendValueInput("VAR" + this.extraVarCount_)
-            .setCheck("VarExpression");
+            .setCheck(["VarExpression", "Nat", "Bool"]);
 
         if (shouldAddBlock) {
             const block = Blockly.getMainWorkspace().newBlock("variable_dropdown");
@@ -1575,7 +1639,7 @@ Blockly.Blocks['variable_dropdown_multiple'] = {
                 .removeField("MINUS");
         }
     },
-    getVarFields: function() {
+    getVarFields: function () {
         const varFields = [this.getField("VAR")];
         for (let i = 0; i < this.extraVarCount_; i++) {
             const block = this.getInputTargetBlock("VAR" + this.extraVarCount_);
@@ -1617,8 +1681,15 @@ Blockly.Blocks['case_identifier'] = {
         this.appendDummyInput()
             .appendField(nameField, 'VAR');
     },
-    getIdentifiers: function () {
-        return [this.getFieldValue("VAR")];
+    getIdentifiers: function (setWarnings, names) {
+        const identifier = this.getFieldValue("VAR");
+        if (names.includes(identifier)) {
+            this.setWarningText(`"${identifier}" has already been defined.`);
+            return [];
+        } else {
+            this.setWarningText(null);
+            return [identifier];
+        }
     },
     getCaseConstrBlocks: function () {
         return [];
@@ -1657,7 +1728,7 @@ Blockly.Blocks['case_constructor'] = {
     },
     addArg_: function (shouldAddBlock = true) {
         const argInput = this.appendValueInput("ARG" + this.argCount_)
-            .setCheck(["CaseConstructor", "Underscore", "CaseIdentifier"]);
+            .setCheck(["CaseConstructor", "CaseIdentifier"]);
 
         this.argCount_++;
 
@@ -1684,15 +1755,18 @@ Blockly.Blocks['case_constructor'] = {
         }
         return blocks;
     },
-    getIdentifiers: function () {
+    getIdentifiers: function (setWarnings, names) {
         const identifiers = [];
         for (let i = 0; i < this.argCount_; i++) {
             const argBlock = this.getInputTargetBlock("ARG" + i);
             if (argBlock) {
-                identifiers.push(...argBlock.getIdentifiers());
+                identifiers.push(...argBlock.getIdentifiers(setWarnings, [...names, ...identifiers]));
             }
         }
         return identifiers;
+    },
+    getVarFields: function () {
+        return [this.getField("VAR")];
     }
     // getIdentifiers: function () {
     //     const identifiers = [];

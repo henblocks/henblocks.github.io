@@ -22,7 +22,7 @@ coqGenerator.PRECEDENCE = 0;
 coqGenerator["theorem"] = function (block) {
     const theoremName = block.getFieldValue("VAR");
     // const statements = codelabGenerator.statementToCode(block, 'STATEMENTS');
-    const proposition = coqGenerator.valueToCode(block, "PROPOSITION", coqGenerator.PRECEDENCE);
+    const proposition = coqGenerator.valueToCode(block, "PROPOSITION", 101);
     const nextBlock = coqGenerator.blockToCode(block.getNextBlock());
     return `Theorem ${theoremName} :\n${indent(proposition)}.\n${nextBlock}`;
 }
@@ -47,9 +47,9 @@ coqGenerator["exact"] = function (block) {
 }
 
 coqGenerator["revert"] = function (block) {
-    const varName = Blockly.Coq.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const varExpression = coqGenerator.valueToCode(block, "VAR", coqGenerator.PRECEDENCE);
     const nextBlock = coqGenerator.blockToCode(block.getNextBlock());
-    return `revert ${varName}.\n${nextBlock}`;
+    return `revert ${varExpression}.\n${nextBlock}`;
 }
 
 coqGenerator["rewrite"] = function (block) {
@@ -152,10 +152,11 @@ coqGenerator["variable"] = function (block) {
 // TODO: Make whitespace variable
 
 coqGenerator["conjunction_disjunction"] = function (block) {
-    const left = coqGenerator.valueToCode(block, "LEFT", coqGenerator.PRECEDENCE);
-    const right = coqGenerator.valueToCode(block, "RIGHT", coqGenerator.PRECEDENCE);
     const operator = block.getFieldValue("OPERATOR");
-    return [`${left} ${operator} ${right}`, coqGenerator.PRECEDENCE];
+    const precedence = operator === "/\\" ? 80 : 85;
+    const left = coqGenerator.valueToCode(block, "LEFT", precedence);
+    const right = coqGenerator.valueToCode(block, "RIGHT", precedence + 1);
+    return [`${left} ${operator} ${right}`, precedence];
 }
 
 // coqGenerator["conjunction"] = function (block) {
@@ -171,15 +172,17 @@ coqGenerator["conjunction_disjunction"] = function (block) {
 // }
 
 coqGenerator["equality"] = function (block) {
-    const left = coqGenerator.valueToCode(block, "LEFT", coqGenerator.PRECEDENCE);
-    const right = coqGenerator.valueToCode(block, "RIGHT", coqGenerator.PRECEDENCE);
-    return [`${left} = ${right}`, coqGenerator.PRECEDENCE];
+    const left = coqGenerator.valueToCode(block, "LEFT", 70);
+    const right = coqGenerator.valueToCode(block, "RIGHT", 70);
+    return [`${left} = ${right}`, 70];
 }
 
 coqGenerator["implies"] = function (block) {
-    const left = coqGenerator.valueToCode(block, "LEFT", coqGenerator.PRECEDENCE);
-    const right = coqGenerator.valueToCode(block, "RIGHT", coqGenerator.PRECEDENCE);
-    return [`${left} -> ${right}`, coqGenerator.PRECEDENCE];
+    const operator = block.getFieldValue("OPERATOR");
+    const precedence = operator === "->" ? 99 : 95;
+    const left = coqGenerator.valueToCode(block, "LEFT", 90);
+    const right = coqGenerator.valueToCode(block, "RIGHT", 99);
+    return [`${left} ${operator} ${right}`, precedence];
 }
 
 coqGenerator["forall"] = function (block) {
@@ -191,11 +194,11 @@ coqGenerator["forall"] = function (block) {
         index++;
         binder = coqGenerator.valueToCode(block, "BINDER" + index, coqGenerator.PRECEDENCE);
     }
-    const proposition = coqGenerator.valueToCode(block, "PROPOSITION", coqGenerator.PRECEDENCE);
+    const proposition = coqGenerator.valueToCode(block, "PROPOSITION", 100);
     const binderCode = binders.map(binder => `(${binder})`).join(" ");
 
     const command = block.getFieldValue("COMMAND");
-    return [`${command} ${binderCode},\n${indent(proposition)}`, coqGenerator.PRECEDENCE];
+    return [`${command} ${binderCode},\n${indent(proposition)}`, 100];
 }
 
 coqGenerator["binder"] = function (block) {
@@ -234,19 +237,20 @@ coqGenerator["variable_dropdown_multiple"] = function (block) {
         const varCode = coqGenerator.valueToCode(block, "VAR" + i, coqGenerator.PRECEDENCE);
         vars.push(varCode);
     }
-    return [`(${sanitize(variable)} ${vars.join(" ")})`, coqGenerator.PRECEDENCE];
+    return [`${sanitize(variable)} ${vars.join(" ")}`, 60];
 }
 
 coqGenerator["not"] = function (block) {
-    const proposition = coqGenerator.valueToCode(block, "PROPOSITION", coqGenerator.PRECEDENCE);
-    return [`~ ${proposition}`, coqGenerator.PRECEDENCE];
+    const proposition = coqGenerator.valueToCode(block, "PROPOSITION", 75);
+    return [`~ ${proposition}`, 75];
 }
 
 coqGenerator["math_operation"] = function (block) {
-    const left = coqGenerator.valueToCode(block, "LEFT", coqGenerator.PRECEDENCE);
-    const right = coqGenerator.valueToCode(block, "RIGHT", coqGenerator.PRECEDENCE);
     const operator = block.getFieldValue("OPERATOR");
-    return [`${left} ${operator} ${right}`, coqGenerator.PRECEDENCE];
+    const precedence = operator === "+" ? 50 : 40;
+    const left = coqGenerator.valueToCode(block, "LEFT", precedence + 1);
+    const right = coqGenerator.valueToCode(block, "RIGHT", precedence);
+    return [`${left} ${operator} ${right}`, precedence];
 }
 
 // coqGenerator["addition"] = function (block) {
@@ -289,13 +293,10 @@ coqGenerator["disjunctive_pattern"] = function (block) {
 }
 
 coqGenerator["multiple_identifier"] = function (block) {
-    let index = 0;
     const variables = []
-    let variable = coqGenerator.valueToCode(block, "VAR" + index, coqGenerator.PRECEDENCE);
-    while (variable) {
+    for (let i = 0; i < block.varCount_; i++) {
+        const variable = coqGenerator.valueToCode(block, "VAR" + i, coqGenerator.PRECEDENCE);
         variables.push(variable);
-        index++;
-        variable = coqGenerator.valueToCode(block, "VAR" + index, coqGenerator.PRECEDENCE);
     }
     const varCode = variables.join(" ");
     return [`${varCode}`, coqGenerator.PRECEDENCE];
@@ -320,19 +321,17 @@ coqGenerator["conjunctive_pattern_multiple"] = function (block) {
 
 
 coqGenerator["disjunctive_pattern_multiple"] = function (block) {
-    let index = 0;
     const patterns = []
-    let pattern = coqGenerator.valueToCode(block, "PATTERN" + index, coqGenerator.PRECEDENCE);
-    while (pattern) {
+    for (let i = 0; i < block.branchCount_; i++) {
+        const pattern = coqGenerator.valueToCode(block, "PATTERN" + i, coqGenerator.PRECEDENCE);
         patterns.push(pattern);
-        index++;
-        pattern = coqGenerator.valueToCode(block, "PATTERN" + index, coqGenerator.PRECEDENCE);
     }
     const code = patterns.join(" | ");
     return [`[${code}]`, coqGenerator.PRECEDENCE];
 }
 
 coqGenerator["destruct"] = function (block) {
+    const command = block.getFieldValue("COMMAND");
     const varName = block.getFieldValue('VAR');
     const pattern = coqGenerator.valueToCode(block, "PATTERN", coqGenerator.PRECEDENCE);
     const nextBlock = coqGenerator.blockToCode(block.getNextBlock());
@@ -344,7 +343,7 @@ coqGenerator["destruct"] = function (block) {
         branches.push(code);
     }
     const branchesCode = branches.join("");
-    return `destruct ${sanitize(varName)} as ${pattern}.\n${branchesCode}${nextBlock}`;
+    return `${command} ${sanitize(varName)} as ${pattern}.\n${branchesCode}${nextBlock}`;
 }
 
 coqGenerator["induction"] = function (block) {
@@ -405,7 +404,7 @@ coqGenerator["definition_or_fixpoint"] = function (block) {
     }
     const typeCode = block.getFieldValue("TYPE");
 
-    const expression = coqGenerator.valueToCode(block, "EXPRESSION", coqGenerator.PRECEDENCE);
+    const expression = coqGenerator.valueToCode(block, "EXPRESSION", 100);
     return `${command} ${name}${binderCode} : ${typeCode} :=\n${indent(expression)}.\n`;
 }
 
@@ -417,7 +416,7 @@ coqGenerator["match"] = function (block) {
         const caseCode = coqGenerator.valueToCode(block, "CASE" + i, coqGenerator.PRECEDENCE);
         branches.push(caseCode);
         branches.push(" => ");
-        const result = coqGenerator.valueToCode(block, "RESULT" + i, coqGenerator.PRECEDENCE);
+        const result = coqGenerator.valueToCode(block, "RESULT" + i, 100);
         branches.push(result);
     }
     const branchCode = branches.join("");
@@ -447,3 +446,12 @@ coqGenerator["true_or_false_proposition"] = function (block) {
 coqGenerator["true_or_false_expression"] = function (block) {
     return [block.getFieldValue('BOOL'), coqGenerator.PRECEDENCE];
 }
+
+coqGenerator["underscore_intro_pattern"] = function (block) {
+    return [`-`, coqGenerator.PRECEDENCE];
+}
+
+coqGenerator["underscore_case"] = function (block) {
+    return [`-`, coqGenerator.PRECEDENCE];
+}
+

@@ -166,7 +166,7 @@ function downloadCoqCode() {
     const code = editor.getValue();
 
     const dateObj = new Date();
-    const fileContents = "(* Coq code generated from HenBlocks ([url]) *)\n"
+    const fileContents = "(* Coq code generated from HenBlocks (https://henblocks.github.io/) *)\n"
         + `(* ${dateObj.toDateString()} ${dateObj.toTimeString()} *)\n\n`
         + code;
     const filename = `coq-blocks-${getCurrentDateTimeString()}.v`;
@@ -179,8 +179,8 @@ function downloadBlocklyXml() {
     const dom = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
     const xml = Blockly.Xml.domToPrettyText(dom);
     const dateObj = new Date();
-    const fileContents = "<!-- Blockly XML generated from HenBlocks -->\n"
-        + "<!-- Visit [url] and upload this file to see the contents -->\n"
+    const fileContents = "<!-- XML blocks generated from HenBlocks -->\n"
+        + "<!-- Visit https://henblocks.github.io/ and upload this file to see the contents -->\n"
         + `<!-- ${dateObj.toDateString()} ${dateObj.toTimeString()} -->\n\n`
         + xml;
     const filename = `coq-blocks-${getCurrentDateTimeString()}.xml`;

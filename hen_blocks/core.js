@@ -2,7 +2,7 @@
 
 // Reference: https://stackoverflow.com/questions/12303989/cartesian-product-of-multiple-arrays-in-javascript
 function cartesianProduct(...a) {
-    return a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
+    return a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())), [[]]);
 }
 
 // REFERENCE: https://groups.google.com/g/blockly/c/eRFrGahCpxA
@@ -52,10 +52,10 @@ function completeVariableRenaming(finalValue) {
 }
 
 function prepareToTraverseBlocks(event) {
-    // console.log(event.type, event.element, event.name, isRenaming);
     if (event.type === "viewport_change" || event.type === "drag") {
         return;
     }
+    // console.log(event.type, event.element, event.name, isRenaming);
 
     let block;
     // Rename value
@@ -83,7 +83,7 @@ function prepareToTraverseBlocks(event) {
                         while (nextBlock && nextBlock.type !== "destruct") {
                             nextBlock = nextBlock.getSurroundParent();
                         }
-                        traverseScopedVariablesToBeRenamed(nextBlock, event.oldValue, event.newValue);
+                        nextBlock.getChildren(true).forEach(childBlock => traverseScopedVariablesToBeRenamed(childBlock, event.oldValue, event.newValue));
                         break;
                     case "binder":
                         traverseScopedVariablesToBeRenamed(block.getSurroundParent(), event.oldValue, event.newValue);
@@ -92,9 +92,29 @@ function prepareToTraverseBlocks(event) {
                     case "definition_or_fixpoint":
                     case "theorem":
                     case "constructor_definition":
-                        traverseAllVariablesToBeRenamed(event.oldValue, event.newValue)
+                        traverseAllVariablesToBeRenamed(event.oldValue, event.newValue);
                         break;
-                    // TODO: add constructor arguments etc.
+                    case "case_identifier":
+                        let nBlock = block.getSurroundParent();
+                        let constrBlock;
+                        while (nBlock && nBlock.type !== "match") {
+                            if (nBlock.type === "case_constructor") {
+                                constrBlock = nBlock;
+                            }
+                            nBlock = nBlock.getSurroundParent();
+                        }
+                        let i;
+                        for (i = 0; i < nBlock.branchCount_; i++) {
+                            const checkBlock = nBlock.getInputTargetBlock("CASE" + i);
+                            if (checkBlock === constrBlock) {
+                                break;
+                            }
+                        }
+                        console.log(block);
+                        console.log(constrBlock);
+                        console.log(nBlock);
+                        traverseScopedVariablesToBeRenamed(nBlock.getInputTargetBlock("RESULT" + i), event.oldValue, event.newValue);
+                        break;
                     default:
                         console.warn("Illegal field change event detected");
                         isRenaming = false;
@@ -128,6 +148,7 @@ function traverseScopedVariablesToBeRenamed(block, oldValue, newValue) {
         case "variable_dropdown":
         case "variable_dropdown_multiple":
         case "match":
+        case "case_constructor":
             varFields = block.getVarFields();
             for (const varField of varFields) {
                 if (varField.selectedOption_[0] === oldValue) {
@@ -139,6 +160,15 @@ function traverseScopedVariablesToBeRenamed(block, oldValue, newValue) {
                         case "induction":
                             return;
                     }
+                }
+            }
+            break;
+        case "binder":
+        case "definition_or_fixpoint":
+            const typeFields = block.getTypeFields();
+            for (const typeField of typeFields) {
+                if (typeField.selectedOption_[0] === oldValue) {
+                    fieldsToBeRenamed.push(typeField);
                 }
             }
             break;
@@ -207,13 +237,12 @@ function traverseBlocks() {
     for (const block of Blockly.getMainWorkspace().getAllBlocks(true)) {
         block.setEnabled(true);
     }
-    const blocks = Blockly.getMainWorkspace().getTopBlocks(true);
+    const blocks = Blockly.getMainWorkspace().getTopBlocks(true).filter(block => !block.isInsertionMarker_);
     if (blocks.length === 0) {
         return;
     }
 
-    const visited = new Set();
-    const allNames = ["nat", "bool"];
+    const allNames = ["nat", "bool", "S", "O", "true", "false", "Prop", "Type"];
     const theoremNames =  [];
     const definitionNames = [];
     // const inductiveNames = {
@@ -239,7 +268,8 @@ function traverseBlocks() {
     ]);
     const constructorNames = [];
 
-    for (block of blocks) {
+    // Traverse all top-level blocks first and record down identifiers so that we can prevent name conflicts later on.
+    for (const block of blocks) {
         switch (block.type) {
             case "inductive":
             case "definition_or_fixpoint":
@@ -262,19 +292,16 @@ function traverseBlocks() {
     }
 
 
-    for (block of blocks) {
-        if (visited.has(block)) {
-            continue;
-        }
-        visited.add(block);
+
+    for (const block of blocks) {
         let nextBlock;
         switch (block.type) {
             case "theorem":
                 nextBlock = block.getInputTargetBlock('PROPOSITION');
-                traverseTheorem(nextBlock, [], theoremNames, definitionNames, inductiveTypes, allNames);
+                traverseTheorem(nextBlock, [], theoremNames, definitionNames, inductiveTypes, constructorNames, allNames);
 
                 const proofBlock = block.getNextBlock();
-                traverseProof(proofBlock, []);
+                traverseProof(proofBlock, [], theoremNames, definitionNames, inductiveTypes, constructorNames, allNames);
 
                 const theoremName = block.getFieldValue("VAR");
                 if (!block.warning) { // Warning occurs only if it's a duplicate name
@@ -299,7 +326,7 @@ function traverseBlocks() {
                     newInductiveTypes.set(type, new Map());
                 }
                 nextBlock = block.getInputTargetBlock('EXPRESSION');
-                traverseDefinition(nextBlock, localIdentifiers, theoremNames, definitionNames, newInductiveTypes, allNames);
+                traverseDefinition(nextBlock, localIdentifiers, theoremNames, definitionNames, newInductiveTypes, constructorNames, allNames);
 
                 // If we have not added the definition name (e.g. non-recursive), add it now.
                 if (!block.warning && !isFixpoint) {
@@ -313,7 +340,7 @@ function traverseBlocks() {
 
                 if (!block.warning) {
                     constructorNames.push(...localConstructorNames);
-                    inductiveTypes.set(inductiveName, new Map()); // TODO: use localConstructorNames
+                    inductiveTypes.set(inductiveName, new Map());
                 }
 
                 block.setTypeDropdown([...inductiveTypes.keys()].map(value => [value, value]));
@@ -331,277 +358,322 @@ function traverseBlocks() {
                     }
                 }
                 break;
-            case "exact":
-            case "intro":
-            case "split":
-            case "destruct":
-            case "induction":
-            case "proof":
-                traverseProof(block, []);
-                disableChildBlocks(block);
-                break;
-            case "variable_dropdown":
-            case "variable_dropdown_multiple":
-            case "forall":
-            case "exists":
-                traverseTheorem(block, [], theoremNames, definitionNames, inductiveTypes, allNames);
-                disableChildBlocks(block);
-                break;
+            // case "exact":
+            // case "intro":
+            // case "split":
+            // case "destruct":
+            // case "induction":
+            // case "proof":
+            //     traverseProof(block, []);
+            //     disableChildBlocks(block);
+            //     break;
+            // case "variable_dropdown":
+            // case "variable_dropdown_multiple":
+            // case "forall":
+            // case "exists":
+            //     traverseTheorem(block, [], theoremNames, definitionNames, inductiveTypes, constructorNames, allNames);
+            //     disableChildBlocks(block);
+            //     break;
             default:
                 disableChildBlocks(block);
         }
-    }
-
-    function traverseDefinition(block, localNames, theoremNames, definitionNames, inductiveTypes, allNames) {
-        if (!block) {
-            return;
-        }
-        visited.add(block);
-        const newLocalNames = [...localNames];
-        const newAllNames = [...allNames];
-        const newInductiveTypes = new Map(inductiveTypes); // I can get away with doing this because the arrays inside this object won't be changed during the traversal.
-
-        switch (block.type) {
-            case "forall":
-            case "exists":
-                // Get names and types from each binder
-                block.setTypeDropdown([...inductiveTypes.keys()].map(value => [value, value]));
-                // TODO: Refactor to combine the above and below line into one function: getIdentifiersAndSetTypeDropdown()
-                const [localIdentifiers, newTypes] = block.getIdentifiers(true, allNames);
-                newLocalNames.push(...localIdentifiers);
-                newAllNames.push(...localIdentifiers);
-                for (const type of newTypes) {
-                    newInductiveTypes.set(type, new Map());
-                }
-                break;
-            case "variable_dropdown":
-            case "variable_dropdown_multiple":
-                const varFields = block.getVarFields();
-                const warnings = new Set();
-                for (const varField of varFields) {
-                    const selectedOption = varField.getValue();
-                    if (selectedOption === "[Select variable]") {
-                        warnings.add("Please select a variable.");
-                    } else if (!localNames.includes(selectedOption) && !theoremNames.includes(selectedOption) && !definitionNames.includes(selectedOption)) {
-                        warnings.add("Please ensure the selected variable has been defined.");
-                    }
-                    const names = [...localNames, ...theoremNames, ...definitionNames];
-                    if (names.length === 0) {
-                        varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
-                    } else {
-                        varField.menuGenerator_ = names.map(value => [value, value]);
-                    }
-                }
-                if (warnings.size === 0) {
-                    block.setWarningText(null);
-                } else {
-                    block.setWarningText([...warnings].join("\n"));
-                }
-                break;
-        }
-        switch (block.type) {
-            case "match":
-                const constructors = getConstructors(inductiveTypes);
-                const caseConstrBlocks = block.getCaseConstrBlocks();
-                for (const caseConstrBlock of caseConstrBlocks) {
-                    const constrField = caseConstrBlock.getField("VAR");
-                    constrField.menuGenerator_ = [...constructors.keys()].map(value => [value, value]);
-
-                    const value = constrField.getValue();
-                    if (value === "[Select constructor]") {
-                        caseConstrBlock.updateShape_(0);
-                    } else {
-                        const argMap = constructors.get(value);
-                        caseConstrBlock.updateShape_(argMap.size);
-                    }
-                }
-
-
-                const varFields = block.getVarFields();
-                const warnings = new Set();
-                for (const varField of varFields) {
-                    const selectedOption = varField.getValue();
-                    if (selectedOption === "[Select variable]") {
-                        warnings.add("Please select a variable.");
-                    } else if (!newLocalNames.includes(selectedOption)) {
-                        warnings.add("Please ensure the selected variable has been defined.");
-                    }
-                    const names = [...localNames];
-                    if (names.length === 0) {
-                        varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
-                    } else {
-                        varField.menuGenerator_ = names.map(value => [value, value]);
-                    }
-                }
-                if (warnings.size === 0) {
-                    block.setWarningText(null);
-                } else {
-                    block.setWarningText([...warnings].join("\n"));
-                }
-
-                for (let i = 0; i < block.branchCount_; i++) {
-                    const caseBlock = block.getInputTargetBlock("CASE" + i);
-                    if (!caseBlock) {
-                        continue;
-                    }
-                    const caseIdentifiers = caseBlock.getIdentifiers();
-                    const resultBlock = block.getInputTargetBlock("RESULT" + i);
-                    traverseDefinition(resultBlock, [...newLocalNames, ...caseIdentifiers], theoremNames, definitionNames, newInductiveTypes, [...newAllNames, ...caseIdentifiers])
-                }
-                return;
-        }
-        block.getChildren(true).forEach(childBlock => traverseDefinition(childBlock, newLocalNames, theoremNames, definitionNames, newInductiveTypes, newAllNames));
-    }
-
-    // I CANNOT ENFORCE TYPE CHECKING DUE TO SCOPED NATURE OF VARIABLE DROPDOWN BLOCK
-    // (e.g. if I want to drag a variable into a _ + _ block, it cannot check beforehand whether the variables is a natural number.
-    function traverseTheorem(block, localNames, theoremNames, definitionNames, inductiveTypes, allNames) {
-        if (!block) {
-            return;
-        }
-        visited.add(block);
-        const newLocalNames = [...localNames];
-        const newAllNames = [...allNames];
-        const newInductiveTypes = new Map(inductiveTypes); // I can get away with doing this because the arrays inside this object won't be changed during the traversal.
-        switch (block.type) {
-            case "forall":
-            case "exists":
-                // Get names and types from each binder
-                block.setTypeDropdown([...inductiveTypes.keys()].map(value => [value, value]));
-                const [localIdentifiers, newTypes] = block.getIdentifiers(true, newAllNames);
-                newLocalNames.push(...localIdentifiers);
-                newAllNames.push(...localIdentifiers);
-                for (const type of newTypes) {
-                    newInductiveTypes.set(type, new Map());
-                }
-                break;
-            case "variable_dropdown":
-            case "variable_dropdown_multiple":
-                const constructors = getConstructors(inductiveTypes);
-                const dropdownOptions =  [...localNames, ...constructors.keys(), ...definitionNames, ...theoremNames];
-
-                const varFields = block.getVarFields();
-                const warnings = new Set();
-                for (const varField of varFields) {
-                    const selectedOption = varField.getValue();
-                    if (selectedOption === "[Select variable]") {
-                        warnings.add("Please select a variable.");
-                    } else if (!dropdownOptions.includes(selectedOption)) {
-                        warnings.add("Please ensure the selected variable has been defined.");
-                    }
-                    if (localNames.length === 0) {
-                        varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
-                    } else {
-                        varField.menuGenerator_ = dropdownOptions.map(value => [value, value]);
-                    }
-                }
-                if (warnings.size === 0) {
-                    block.setWarningText(null);
-                } else {
-                    block.setWarningText([...warnings].join("\n"));
-                }
-                break;
-            default:
-        }
-        block.getChildren(true).forEach(childBlock => traverseTheorem(childBlock, newLocalNames, theoremNames, definitionNames, newInductiveTypes, newAllNames));
-    }
-
-    /**
-     *
-     * @param {!Blockly.Block} block
-     * @param {string[]} names
-     */
-    function traverseProof(block, names) {
-        if (!block) {
-            return;
-        }
-        visited.add(block);
-        // console.log(block.type, names);
-        const newNames = [...names];
-
-        // VARIABLE DROPDOWN
-        // Check whether selected variable is valid
-        // Update dropdown options
-        switch (block.type) {
-            case "induction":
-            case "destruct":
-            case "variable_dropdown":
-            case "variable_dropdown_multiple":
-                const varFields = block.getVarFields();
-                const warnings = new Set();
-                for (const varField of varFields) {
-                    const selectedOption = varField.getValue();
-                    if (selectedOption === "[Select variable]") {
-                        warnings.add("Please select variable.");
-                    } else if (!names.includes(selectedOption)) {
-                        warnings.add("Please ensure the selected variable has been defined.");
-                    }
-                    if (names.length === 0) {
-                        varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
-                    } else {
-                        varField.menuGenerator_ = names.map(value => [value, value]);
-                    }
-                }
-                if (warnings.size === 0) {
-                    block.setWarningText(null);
-                } else {
-                    block.setWarningText([...warnings].join("\n"));
-                }
-                break;
-        }
-
-        // DEFINING VARIABLES
-        // Check whether variable has been defined before
-        // Update name list with newly defined variables / variables that have been destructed
-        switch (block.type) {
-            case "intro":
-                const name = block.getFieldValue("VAR");
-                if (newNames.includes(name)) {
-                    block.setWarningText(`"${name}" has already been defined.`);
-                } else {
-                    block.setWarningText(null);
-                    newNames.push(name);
-                }
-                break;
-            case "induction":
-            case "destruct":
-                if (!block.isInsertionMarker_) {
-                    const patternBlock = block.getInputTargetBlock("PATTERN");
-                    let targetCount = patternBlock?.getNumBranches() ?? 0;
-                    if (targetCount === 1) {
-                        targetCount = 0;
-                    }
-                    block.updateShape_(targetCount);
-                }
-
-
-
-                const selectedOption = block.getFieldValue("VAR");
-                const index = names.indexOf(selectedOption);
-                newNames.splice(index, 1);
-                // TODO: Set warning text for destruct/induction block if name has already been defined
-                const identifiers = block.getIdentifiersFromIntroPattern();
-                if (identifiers.length > 0) {
-                    if (block.branchCount_ === 0) {
-                        console.assert(identifiers.length === 1);
-                        newNames.push(...identifiers[0]);
-                    } else {
-                        console.assert(identifiers.length === block.branchCount_);
-                        for (let i = 0; i < block.branchCount_; i++) {
-                            const branchBlock = block.getInputTargetBlock("STATEMENTS" + i);
-                            const branchNames = [...newNames, ...identifiers[i]];
-                            traverseProof(branchBlock, branchNames);
-                        }
-                        return;
-                    }
-                }
-                break;
-            default:
-        }
-
-        block.getChildren(true).forEach(childBlock => traverseProof(childBlock, newNames));
     }
 }
+
+function traverseDefinition(block, localNames, theoremNames, definitionNames, inductiveTypes, constructorNames, allNames) {
+    if (!block) {
+        return;
+    }
+    const newLocalNames = [...localNames];
+    const newAllNames = [...allNames];
+    const newInductiveTypes = new Map(inductiveTypes); // I can get away with doing this because the arrays inside this object won't be changed during the traversal.
+
+    switch (block.type) {
+        case "forall":
+        case "exists":
+            // Get names and types from each binder
+            block.setTypeDropdown([...inductiveTypes.keys()].map(value => [value, value]));
+            // TODO: Refactor to combine the above and below line into one function: getIdentifiersAndSetTypeDropdown()
+            const [localIdentifiers, newTypes] = block.getIdentifiers(true, allNames);
+            newLocalNames.push(...localIdentifiers);
+            newAllNames.push(...localIdentifiers);
+            for (const type of newTypes) {
+                newInductiveTypes.set(type, new Map());
+            }
+            break;
+        case "variable_dropdown":
+        case "variable_dropdown_multiple":
+            const varFields = block.getVarFields();
+            const warnings = new Set();
+            for (const varField of varFields) {
+                const selectedOption = varField.getValue();
+                if (selectedOption === "[Select variable]") {
+                    warnings.add("Please select a variable.");
+                } else if (!localNames.includes(selectedOption) && !theoremNames.includes(selectedOption) && !definitionNames.includes(selectedOption) && !constructorNames.includes(selectedOption)) {
+                    warnings.add("Please ensure the selected variable has been defined.");
+                }
+                const names = [...localNames, ...definitionNames, ...constructorNames, ...theoremNames];
+                if (names.length === 0) {
+                    varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
+                } else {
+                    varField.menuGenerator_ = names.map(value => [value, value]);
+                }
+            }
+            if (warnings.size === 0) {
+                block.setWarningText(null);
+            } else {
+                block.setWarningText([...warnings].join("\n"));
+            }
+            break;
+    }
+    switch (block.type) {
+        case "match":
+            const constructors = getConstructors(inductiveTypes);
+            const caseConstrBlocks = block.getCaseConstrBlocks();
+            const selectedConstructors = [];
+            for (const caseConstrBlock of caseConstrBlocks) {
+                const constrField = caseConstrBlock.getField("VAR");
+                constrField.menuGenerator_ = [...constructors.keys()].map(value => [value, value]);
+
+                const value = constrField.getValue();
+                if (value === "[Select constructor]" || !constructors.has(value)) {
+                    caseConstrBlock.updateShape_(0);
+                } else {
+                    const argMap = constructors.get(value);
+                    caseConstrBlock.updateShape_(argMap.size);
+                }
+                const constrWarnings = new Set();
+
+                if (selectedConstructors.includes(value)) {
+                    constrWarnings.add("Pattern has already been used");
+                }
+                if (!constructors.has(value)) {
+                    constrWarnings.add("Please ensure the selected constructor has been defined.");
+                }
+                if (constrWarnings.size === 0) {
+                    caseConstrBlock.setWarningText(null);
+                } else {
+                    caseConstrBlock.setWarningText([...constrWarnings].join("\n"));
+                }
+
+                selectedConstructors.push(value);
+            }
+
+
+
+
+            const varFields = block.getVarFields();
+            const warnings = new Set();
+            for (const varField of varFields) {
+                const selectedOption = varField.getValue();
+                if (selectedOption === "[Select variable]") {
+                    warnings.add("Please select a variable.");
+                } else if (!newLocalNames.includes(selectedOption)) {
+                    warnings.add("Please ensure the selected variable has been defined.");
+                }
+                const names = [...localNames];
+                if (names.length === 0) {
+                    varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
+                } else {
+                    varField.menuGenerator_ = names.map(value => [value, value]);
+                }
+            }
+            if (warnings.size === 0) {
+                block.setWarningText(null);
+            } else {
+                block.setWarningText([...warnings].join("\n"));
+            }
+
+            for (let i = 0; i < block.branchCount_; i++) {
+                const caseBlock = block.getInputTargetBlock("CASE" + i);
+                if (!caseBlock) {
+                    continue;
+                }
+                const caseIdentifiers = caseBlock.getIdentifiers(true, newAllNames);
+                const resultBlock = block.getInputTargetBlock("RESULT" + i);
+                traverseDefinition(resultBlock, [...newLocalNames, ...caseIdentifiers], theoremNames, definitionNames, newInductiveTypes, constructorNames, [...newAllNames, ...caseIdentifiers])
+            }
+            return;
+    }
+    block.getChildren(true).forEach(childBlock => traverseDefinition(childBlock, newLocalNames, theoremNames, definitionNames, newInductiveTypes, constructorNames, newAllNames));
+}
+
+// I CANNOT ENFORCE TYPE CHECKING DUE TO SCOPED NATURE OF VARIABLE DROPDOWN BLOCK
+// (e.g. if I want to drag a variable into a _ + _ block, it cannot check beforehand whether the variables is a natural number.
+function traverseTheorem(block, localNames, theoremNames, definitionNames, inductiveTypes, constructorNames, allNames) {
+    if (!block) {
+        return;
+    }
+    const newLocalNames = [...localNames];
+    const newAllNames = [...allNames];
+    const newInductiveTypes = new Map(inductiveTypes); // I can get away with doing this because the arrays inside this object won't be changed during the traversal.
+    switch (block.type) {
+        case "forall":
+        case "exists":
+            // Get names and types from each binder
+            block.setTypeDropdown([...inductiveTypes.keys()].map(value => [value, value]));
+            const [localIdentifiers, newTypes] = block.getIdentifiers(true, newAllNames);
+            newLocalNames.push(...localIdentifiers);
+            newAllNames.push(...localIdentifiers);
+            for (const type of newTypes) {
+                newInductiveTypes.set(type, new Map());
+            }
+            break;
+        case "variable_dropdown":
+        case "variable_dropdown_multiple":
+            const dropdownOptions =  [...localNames, ...definitionNames, ...constructorNames, ...theoremNames];
+
+            const varFields = block.getVarFields();
+            const warnings = new Set();
+            for (const varField of varFields) {
+                const selectedOption = varField.getValue();
+                if (selectedOption === "[Select variable]") {
+                    warnings.add("Please select a variable.");
+                } else if (!dropdownOptions.includes(selectedOption)) {
+                    warnings.add("Please ensure the selected variable has been defined.");
+                }
+                if (dropdownOptions.length === 0) {
+                    varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
+                } else {
+                    varField.menuGenerator_ = dropdownOptions.map(value => [value, value]);
+                }
+            }
+            if (warnings.size === 0) {
+                block.setWarningText(null);
+            } else {
+                block.setWarningText([...warnings].join("\n"));
+            }
+            break;
+        default:
+    }
+    block.getChildren(true).forEach(childBlock => traverseTheorem(childBlock, newLocalNames, theoremNames, definitionNames, newInductiveTypes, constructorNames, newAllNames));
+}
+
+/**
+ *
+ * @param {!Blockly.Block} block
+ */
+function traverseProof(block, localNames, theoremNames, definitionNames, inductiveTypes, constructorNames, allNames) {
+    if (!block) {
+        return;
+    }
+    // console.log(block.type, names);
+    const newLocalNames = [...localNames];
+    const newAllNames = [...allNames];
+
+    // VARIABLE DROPDOWN
+    // Check whether selected variable is valid
+    // Update dropdown options
+    let dropdownOptions =  [...localNames, ...definitionNames, ...constructorNames, ...theoremNames];
+    switch (block.type) {
+        case "induction":
+        case "destruct":
+            dropdownOptions = [...localNames];
+            // fallthrough
+        case "variable_dropdown":
+        case "variable_dropdown_multiple":
+            if (block.getSurroundParent().type === "revert" || block.getSurroundParent().type === "contradiction" || block.getSurroundParent().type === "discriminate") {
+                dropdownOptions = [...localNames];
+            }
+            if (block.getSurroundParent().type === "unfold") {
+                dropdownOptions = [...definitionNames, ...theoremNames];
+            }
+
+            const varFields = block.getVarFields();
+            const warnings = new Set();
+            for (const varField of varFields) {
+                const selectedOption = varField.getValue();
+                if (selectedOption === "[Select variable]") {
+                    warnings.add("Please select variable.");
+                } else if (!dropdownOptions.includes(selectedOption)) {
+                    warnings.add("Please ensure the selected variable has been defined.");
+                }
+                if (dropdownOptions.length === 0) {
+                    varField.menuGenerator_ = [["[Select variable]", "[Select variable]"]];
+                } else {
+                    varField.menuGenerator_ = dropdownOptions.map(value => [value, value]);
+                }
+            }
+            if (warnings.size === 0) {
+                block.setWarningText(null);
+            } else {
+                block.setWarningText([...warnings].join("\n"));
+            }
+            break;
+    }
+
+    // DEFINING VARIABLES
+    // Check whether variable has been defined before
+    // Update name list with newly defined variables / variables that have been destructed
+    let selectedOption, index;
+    switch (block.type) {
+        case "revert":
+            const varBlock = block.getInputTargetBlock("VAR");
+            if (varBlock) {
+                selectedOption = varBlock.getFieldValue("VAR");
+                if (localNames.includes(selectedOption)) {
+                    traverseProof(varBlock, newLocalNames, theoremNames, definitionNames, inductiveTypes, constructorNames, newAllNames);
+                    index = localNames.indexOf(selectedOption);
+                    newLocalNames.splice(index, 1);
+                    index = allNames.indexOf(selectedOption);
+                    newAllNames.splice(index, 1);
+                    traverseProof(block.getNextBlock(), newLocalNames, theoremNames, definitionNames, inductiveTypes, constructorNames, newAllNames);
+                    return;
+                }
+            }
+            break;
+        case "intro":
+            const name = block.getFieldValue("VAR");
+            if (newAllNames.includes(name)) {
+                block.setWarningText(`"${name}" has already been defined.`);
+            } else {
+                block.setWarningText(null);
+                newLocalNames.push(name);
+                newAllNames.push(name);
+            }
+            break;
+        case "induction":
+        case "destruct":
+            if (!block.isInsertionMarker_) {
+                const patternBlock = block.getInputTargetBlock("PATTERN");
+                let targetCount = patternBlock?.getNumBranches() ?? 0;
+                if (targetCount === 1) {
+                    targetCount = 0;
+                }
+                block.updateShape_(targetCount);
+            }
+
+
+
+            selectedOption = block.getFieldValue("VAR");
+            index = localNames.indexOf(selectedOption);
+            newLocalNames.splice(index, 1);
+            index = allNames.indexOf(selectedOption);
+            newAllNames.splice(index, 1);
+            const identifiers = block.getIdentifiersFromIntroPattern(true, newAllNames);
+            if (identifiers.length > 0) {
+                if (block.branchCount_ === 0) {
+                    console.assert(identifiers.length === 1);
+                    newLocalNames.push(...identifiers[0]);
+                    newAllNames.push(...identifiers[0]);
+                } else {
+                    console.assert(identifiers.length === block.branchCount_);
+                    for (let i = 0; i < block.branchCount_; i++) {
+                        const branchBlock = block.getInputTargetBlock("STATEMENTS" + i);
+                        const branchNames = [...newLocalNames, ...identifiers[i]];
+                        const branchAllNames = [...newAllNames, ...identifiers[i]];
+                        traverseProof(branchBlock, branchNames, theoremNames, definitionNames, inductiveTypes, constructorNames, branchAllNames);
+                    }
+                    return;
+                }
+            }
+            break;
+        default:
+    }
+
+    block.getChildren(true).forEach(childBlock => traverseProof(childBlock, newLocalNames, theoremNames, definitionNames, inductiveTypes, constructorNames, newAllNames));
+}
+
 
 function disableChildBlocks(block) {
     if (!block) {
