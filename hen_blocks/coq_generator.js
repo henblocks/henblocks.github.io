@@ -52,6 +52,24 @@ coqGenerator["revert"] = function (block) {
     return `revert ${varExpression}.\n${nextBlock}`;
 }
 
+coqGenerator["apply"] = function (block) {
+    const varExpression = coqGenerator.valueToCode(block, "VAR", coqGenerator.PRECEDENCE);
+    const nextBlock = coqGenerator.blockToCode(block.getNextBlock());
+    return `apply ${varExpression}.\n${nextBlock}`;
+}
+
+coqGenerator["contradiction"] = function (block) {
+    const varExpression = coqGenerator.valueToCode(block, "VAR", coqGenerator.PRECEDENCE);
+    const nextBlock = coqGenerator.blockToCode(block.getNextBlock());
+    return `contradiction ${varExpression}.\n${nextBlock}`;
+}
+
+coqGenerator["discriminate"] = function (block) {
+    const varExpression = coqGenerator.valueToCode(block, "VAR", coqGenerator.PRECEDENCE);
+    const nextBlock = coqGenerator.blockToCode(block.getNextBlock());
+    return `discriminate ${varExpression}.\n${nextBlock}`;
+}
+
 coqGenerator["rewrite"] = function (block) {
     const arrow = (block.getFieldValue("ARROW") === "LTR") ? "->" : "<-";
     const varExpression = coqGenerator.valueToCode(block, "VAR", coqGenerator.PRECEDENCE);
@@ -60,9 +78,9 @@ coqGenerator["rewrite"] = function (block) {
 }
 
 coqGenerator["unfold"] = function (block) {
-    const varName = Blockly.Coq.nameDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+    const varExpression = coqGenerator.valueToCode(block, "VAR", coqGenerator.PRECEDENCE);
     const nextBlock = coqGenerator.blockToCode(block.getNextBlock());
-    return `unfold ${varName}.\n${nextBlock}`;
+    return `unfold ${varExpression}.\n${nextBlock}`;
 }
 
 coqGenerator["destruct_conjunction"] = function (block) {

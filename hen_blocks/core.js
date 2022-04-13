@@ -576,7 +576,7 @@ function traverseProof(block, localNames, theoremNames, definitionNames, inducti
                 dropdownOptions = [...localNames];
             }
             if (block.getSurroundParent().type === "unfold") {
-                dropdownOptions = [...definitionNames, ...theoremNames];
+                dropdownOptions = [...definitionNames, ...theoremNames, "not"];
             }
 
             const varFields = block.getVarFields();
