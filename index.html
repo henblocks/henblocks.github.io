@@ -47,9 +47,79 @@
         .hideCoqPanel {
             display: none !important;
         }
+
+        /* CSS for toast */
+        /* Referenced from https://www.w3schools.com/howto/howto_js_snackbar.asp */
+        .toast {
+            visibility: hidden;
+            display: block;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 2px;
+            padding: 16px;
+            position: fixed;
+            z-index: 999;
+            bottom: 30px;
+            font-size: 17px;
+            font-family: monospace, times, 'Arial Unicode MS';
+        }
+
+        .show-toast {
+            visibility: visible;
+            -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @-webkit-keyframes fadein {
+            from {
+                bottom: 0;
+                opacity: 0;
+            }
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadein {
+            from {
+                bottom: 0;
+                opacity: 0;
+            }
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @-webkit-keyframes fadeout {
+            from {
+                bottom: 30px;
+                opacity: 1;
+            }
+            to {
+                bottom: 0;
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeout {
+            from {
+                bottom: 30px;
+                opacity: 1;
+            }
+            to {
+                bottom: 0;
+                opacity: 0;
+            }
+        }
+
+        /* End of toast CSS */
     </style>
 </head>
-<body style="display: flex;">
+<!-- justify-content center makes toasts horizontally centered -->
+<body style="display: flex; justify-content: center;">
 <div id="blocklyArea" style="height: 100%; flex-basis: 100%; position: relative;">
     <div id="toggleCoqPanelButton" style="position: absolute; right: 0; z-index: 10000; min-width: 20px; background-color: #FFF;
     border-color: #dadce0; border-style: solid; border-width: 0 1px 1px 1px; text-align: center; cursor: pointer;"
@@ -64,7 +134,7 @@
             <!--<button class="download-button">🕮 Tutorial</button>-->
             <button class="download-button" onclick="downloadCoqCode()">⭳ Download Coq code</button>
             <button class="download-button" onclick="downloadBlocklyXml()">⭳ Download XML blocks</button>
-            <input type="file" id="file-input" style="display:none;" onchange="uploadBlocklyXml(event)"/>
+            <input type="file" accept=".xml" id="file-input" style="display:none;" onchange="uploadBlocklyXml(event)"/>
             <button class="download-button" onclick="openFileDialog()" style="margin-bottom: 10px;">⭱ Upload XML
                 blocks
             </button>
