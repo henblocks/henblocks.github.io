@@ -123,14 +123,15 @@
 <div id="blocklyArea" style="height: 100%; flex-basis: 100%; position: relative;">
     <div id="toggleCoqPanelButton" style="position: absolute; right: 0; z-index: 10000; min-width: 20px; background-color: #FFF;
     border-color: #dadce0; border-style: solid; border-width: 0 1px 1px 1px; text-align: center; cursor: pointer;"
-         onclick="toggleCoqPanel()">▶</div>
+         onclick="toggleCoqPanel()">▶
+    </div>
 </div>
 <!-- Bernard: From jsCoq template https://github.com/jscoq/jscoq/blob/v8.14/examples/npm-template.html -->
 <div id="ide-wrapper" class="toggled" style="flex-basis: 100%;">
     <div id="code-wrapper">
         <div id="document">
             <h1 style="margin-top: 0; margin-bottom: 10px; font-family: monospace, times, 'Arial Unicode MS'">
-                HenBlocks</h1>
+                HenBlocks<span id="henblocks-version" style="font-size: 10px;"></span></h1>
             <!--<button class="download-button">🕮 Tutorial</button>-->
             <button class="download-button" onclick="downloadCoqCode()">⭳ Download Coq code</button>
             <button class="download-button" onclick="downloadBlocklyXml()">⭳ Download XML blocks</button>
@@ -139,6 +140,8 @@
                 blocks
             </button>
             <textarea id="coq-code">Loading...</textarea>
+            <p style="font-family: monospace, times, 'Arial Unicode MS';">WARNING: HenBlocks is in an experimental stage
+                and there may be frequent breaking changes.</p>
         </div>
     </div>
 </div>

@@ -1,8 +1,12 @@
+const HENBLOCKS_VERSION = "0.1.0";
+
+document.querySelector("#henblocks-version").innerText = ` ${HENBLOCKS_VERSION}`;
+
 /**
  * Bernard: From Blockly Resizable demo https://github.com/google/blockly/blob/master/demos/resizable/overlay.html
  */
-const blocklyArea = document.getElementById('blocklyArea');
-const blocklyDiv = document.getElementById('blocklyDiv');
+const blocklyArea = document.querySelector('#blocklyArea');
+const blocklyDiv = document.querySelector('#blocklyDiv');
 const options = {
     media: 'blockly-8.0.0/media/',
     toolbox: coqToolbox,
@@ -76,6 +80,7 @@ coqManagerPromise.then(c => {
  */
 // Must wait for page to load because must wait for code mirror to be injected
 window.addEventListener('load', onload);
+
 function onload() {
     generateAndDisplayCode();
     blocklyWorkspace.addChangeListener(generateAndDisplayCode);
@@ -166,7 +171,7 @@ function downloadCoqCode() {
     const code = editor.getValue();
 
     const dateObj = new Date();
-    const fileContents = "(* Coq code generated from HenBlocks (https://henblocks.github.io/) *)\n"
+    const fileContents = `(* Coq code generated from HenBlocks v${HENBLOCKS_VERSION} (https://henblocks.github.io/) *)\n`
         + `(* ${dateObj.toDateString()} ${dateObj.toTimeString()} *)\n\n`
         + code;
     const filename = `coq-blocks-${getCurrentDateTimeString()}.v`;
@@ -179,7 +184,7 @@ function downloadBlocklyXml() {
     const dom = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
     const xml = Blockly.Xml.domToPrettyText(dom);
     const dateObj = new Date();
-    const fileContents = "<!-- XML blocks generated from HenBlocks -->\n"
+    const fileContents = `<!-- XML blocks generated from HenBlocks v${HENBLOCKS_VERSION} -->\n`
         + "<!-- Visit https://henblocks.github.io/ and upload this file to see the contents -->\n"
         + `<!-- ${dateObj.toDateString()} ${dateObj.toTimeString()} -->\n\n`
         + xml;
@@ -190,7 +195,7 @@ function downloadBlocklyXml() {
 
 //Bernard
 function openFileDialog() {
-    document.getElementById("file-input").click();
+    document.querySelector("#file-input").click();
 }
 
 // Bernard
