@@ -62,7 +62,8 @@ const jscoq_opts = {
     prelude: true,
     implicit_libs: true,
     base_path: './node_modules/jscoq/',
-    editor: {mode: {'company-coq': true}, keyMap: 'default', /* Added by Bernard --> */ readOnly: true},
+    // Bernard: Changed company-coq to false so that forall and exists will be rendered as is and not as unicode symbols
+    editor: {mode: {'company-coq': false}, keyMap: 'default', /* Added by Bernard --> */ readOnly: true},
     init_pkgs: ['init'],
     all_pkgs: ['coq']
 };
