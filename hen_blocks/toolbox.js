@@ -160,11 +160,13 @@ const coqToolbox = `
         <block type="simpl"/>
         <!-- <block type="f_equal"/> -->
         
-        <label text="Breaking Apart Conjunctions/Disjunctions in Goals"></label>
-        <block type="left_right"/>
+        <label text="Breaking Apart Conjunctions in Goals"></label>
         <block type="split"/>
         
-        <label text="Breaking Apart Conjunctions/Disjunctions/Inductive Types in Hypotheses"></label>
+        <label text="Breaking Apart Disjunctions in Goals"></label>
+        <block type="left_right"/>
+        
+        <label text="Breaking Apart Conjunctions in Hypotheses"></label>
         <block type="destruct">
             <mutation branchCount="0" />
             <field name="COMMAND">destruct</field>
@@ -190,6 +192,7 @@ const coqToolbox = `
                 </block>
             </value>
         </block>
+        <label text="Breaking Apart Disjunctions in Hypotheses"></label>
         <block type="destruct">
             <mutation branchCount="2" />
             <field name="COMMAND">destruct</field>
@@ -210,6 +213,7 @@ const coqToolbox = `
                 </block>
             </value>
         </block>
+        <label text="Breaking Apart Inductive Types in Hypotheses"></label>
         <block type="destruct">
             <mutation branchCount="2" />
             <field name="COMMAND">induction</field>
