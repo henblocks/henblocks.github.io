@@ -239,7 +239,7 @@ coqGenerator["binder"] = function (block) {
         type = block.getFieldValue("TYPE" + index);
     }
     const typeCode = types.join(" -> ");
-    return [`${varCode}: ${typeCode}`, coqGenerator.PRECEDENCE];
+    return [`${varCode} : ${typeCode}`, coqGenerator.PRECEDENCE];
 }
 
 
