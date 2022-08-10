@@ -985,6 +985,208 @@ const coqToolbox = `
                 <block type="proof" />
             </next>
         </block>
+        <block type="theorem">
+            <field name="VAR">identity_function</field>
+            <value name="PROPOSITION">
+                <block type="forall">
+                    <mutation binderCount="0" />
+                    <field name="COMMAND">forall</field>
+                    <value name="BINDER0">
+                        <block type="binder" deletable="false" movable="false">
+                            <mutation options="[[&quot;Prop&quot;,&quot;Prop&quot;],[&quot;nat&quot;,&quot;nat&quot;],[&quot;bool&quot;,&quot;bool&quot;],[&quot;Type&quot;,&quot;Type&quot;]]" varCount="1" typeCount="1" />
+                            <field name="VAR0">P</field>
+                            <field name="TYPE0">Prop</field>
+                        </block>
+                    </value>
+                    <value name="PROPOSITION">
+                        <block type="implies">
+                            <field name="OPERATOR">-&gt;</field>
+                            <value name="LEFT">
+                                <block type="variable_dropdown">
+                                    <mutation options="[[&quot;P&quot;,&quot;P&quot;]]" />
+                                    <field name="VAR">P</field>
+                                </block>
+                            </value>
+                            <value name="RIGHT">
+                                <block type="variable_dropdown">
+                                    <mutation options="[[&quot;P&quot;,&quot;P&quot;]]" />
+                                    <field name="VAR">P</field>
+                                </block>
+                            </value>
+                        </block>
+                    </value>
+                </block>
+            </value>
+            <next>
+                <block type="proof" />
+            </next>
+        </block>
+        <block type="theorem">
+            <field name="VAR">proving_a_conjunction</field>
+            <value name="PROPOSITION">
+                <block type="forall">
+                    <mutation binderCount="0" />
+                    <field name="COMMAND">forall</field>
+                    <value name="BINDER0">
+                        <block type="binder" deletable="false" movable="false">
+                            <mutation options="[[&quot;Prop&quot;,&quot;Prop&quot;],[&quot;nat&quot;,&quot;nat&quot;],[&quot;bool&quot;,&quot;bool&quot;],[&quot;Type&quot;,&quot;Type&quot;]]" varCount="2" typeCount="1" />
+                            <field name="VAR0">P</field>
+                            <field name="VAR1">Q</field>
+                            <field name="TYPE0">Prop</field>
+                        </block>
+                    </value>
+                    <value name="PROPOSITION">
+                        <block type="implies">
+                            <field name="OPERATOR">-&gt;</field>
+                            <value name="LEFT">
+                                <block type="variable_dropdown">
+                                    <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                    <field name="VAR">P</field>
+                                </block>
+                            </value>
+                            <value name="RIGHT">
+                                <block type="implies">
+                                    <field name="OPERATOR">-&gt;</field>
+                                    <value name="LEFT">
+                                        <block type="variable_dropdown">
+                                            <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                            <field name="VAR">Q</field>
+                                        </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                        <block type="conjunction_disjunction">
+                                            <field name="OPERATOR">/\\</field>
+                                            <value name="LEFT">
+                                                <block type="variable_dropdown">
+                                                    <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                                    <field name="VAR">P</field>
+                                                </block>
+                                            </value>
+                                            <value name="RIGHT">
+                                                <block type="variable_dropdown">
+                                                    <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                                    <field name="VAR">Q</field>
+                                                </block>
+                                            </value>
+                                        </block>
+                                    </value>
+                                </block>
+                            </value>
+                        </block>
+                    </value>
+                </block>
+            </value>
+            <next>
+                <block type="proof" />
+            </next>
+        </block>
+        <block type="theorem">
+            <field name="VAR">proving_a_disjunction</field>
+            <value name="PROPOSITION">
+                <block type="forall">
+                    <mutation binderCount="0" />
+                    <field name="COMMAND">forall</field>
+                    <value name="BINDER0">
+                        <block type="binder" deletable="false" movable="false">
+                            <mutation options="[[&quot;Prop&quot;,&quot;Prop&quot;],[&quot;nat&quot;,&quot;nat&quot;],[&quot;bool&quot;,&quot;bool&quot;],[&quot;Type&quot;,&quot;Type&quot;]]" varCount="2" typeCount="1" />
+                            <field name="VAR0">P</field>
+                            <field name="VAR1">Q</field>
+                            <field name="TYPE0">Prop</field>
+                        </block>
+                    </value>
+                    <value name="PROPOSITION">
+                        <block type="implies">
+                            <field name="OPERATOR">-&gt;</field>
+                            <value name="LEFT">
+                                <block type="variable_dropdown">
+                                    <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                    <field name="VAR">P</field>
+                                </block>
+                            </value>
+                            <value name="RIGHT">
+                                <block type="conjunction_disjunction">
+                                    <field name="OPERATOR">\\/</field>
+                                    <value name="LEFT">
+                                        <block type="variable_dropdown">
+                                            <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                            <field name="VAR">P</field>
+                                        </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                        <block type="variable_dropdown">
+                                            <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                            <field name="VAR">Q</field>
+                                        </block>
+                                    </value>
+                                </block>
+                            </value>
+                        </block>
+                    </value>
+                </block>
+            </value>
+            <next>
+                <block type="proof" />
+            </next>
+        </block>
+        <block type="theorem">
+            <field name="VAR">conjunction_implies_disjunction</field>
+            <value name="PROPOSITION">
+                <block type="forall">
+                    <mutation binderCount="0" />
+                    <field name="COMMAND">forall</field>
+                    <value name="BINDER0">
+                        <block type="binder" deletable="false" movable="false">
+                            <mutation options="[[&quot;Prop&quot;,&quot;Prop&quot;],[&quot;nat&quot;,&quot;nat&quot;],[&quot;bool&quot;,&quot;bool&quot;],[&quot;Type&quot;,&quot;Type&quot;]]" varCount="2" typeCount="1" />
+                            <field name="VAR0">P</field>
+                            <field name="VAR1">Q</field>
+                            <field name="TYPE0">Prop</field>
+                        </block>
+                    </value>
+                    <value name="PROPOSITION">
+                        <block type="implies">
+                            <field name="OPERATOR">-&gt;</field>
+                            <value name="LEFT">
+                                <block type="conjunction_disjunction">
+                                    <field name="OPERATOR">/\\</field>
+                                    <value name="LEFT">
+                                        <block type="variable_dropdown">
+                                            <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                            <field name="VAR">P</field>
+                                        </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                        <block type="variable_dropdown">
+                                            <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                            <field name="VAR">Q</field>
+                                        </block>
+                                    </value>
+                                </block>
+                            </value>
+                            <value name="RIGHT">
+                                <block type="conjunction_disjunction">
+                                    <field name="OPERATOR">\\/</field>
+                                    <value name="LEFT">
+                                        <block type="variable_dropdown">
+                                            <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                            <field name="VAR">P</field>
+                                        </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                        <block type="variable_dropdown">
+                                            <mutation options="[[&quot;P&quot;,&quot;P&quot;],[&quot;Q&quot;,&quot;Q&quot;]]" />
+                                            <field name="VAR">Q</field>
+                                        </block>
+                                    </value>
+                                </block>
+                            </value>
+                        </block>
+                    </value>
+                </block>
+            </value>
+            <next>
+                <block type="proof" />
+            </next>
+        </block>
     </category>
     <!-- <button text="Create variable..." callbackKey="CREATE_VARIABLE"></button> -->
     <!-- <category name="Variables" categorystyle="variable_category" custom="VARIABLE"> -->
