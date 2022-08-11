@@ -251,9 +251,10 @@ function uploadBlocklyXml(event) {
 }
 
 function toggleCoqPanel() {
-    document.querySelector("#ide-wrapper").classList.toggle('hideCoqPanel');
+    const ideWrapperElement = document.querySelector("#ide-wrapper");
+    ideWrapperElement.classList.toggle("hideCoqPanel");
     const button = document.querySelector("#toggleCoqPanelButton");
-    button.innerHTML = button.innerHTML === "▶" ? "◀" : "▶";
+    button.innerHTML = ideWrapperElement.classList.contains("hideCoqPanel") ? "◀" : "▶";
     onresize();
 }
 
